@@ -161,8 +161,8 @@ def load_chapter(path: str | Path) -> ChapterDefinition:
             item["title"],
             tuple(pipeline) if pipeline is not None else None,
             mode,
-            tuple(item.get("evidence", [])),
-            tuple(item.get("notes", [])),
+            _string_tuple(item.get("evidence"), f"method {item['id']}.evidence"),
+            _string_tuple(item.get("notes"), f"method {item['id']}.notes"),
         )
         _add_unique(methods, method.id, method, "method")
 
@@ -177,8 +177,8 @@ def load_chapter(path: str | Path) -> ChapterDefinition:
             item.get("expected_artifact"),
             item.get("reading_artifact"),
             item["status"],
-            tuple(item.get("evidence", [])),
-            tuple(item.get("notes", [])),
+            _string_tuple(item.get("evidence"), f"case {item['id']}.evidence"),
+            _string_tuple(item.get("notes"), f"case {item['id']}.notes"),
             item.get("execution", {}),
         )
         if not isinstance(case.execution, dict):
