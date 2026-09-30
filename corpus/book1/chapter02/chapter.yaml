@@ -169,7 +169,7 @@ evidence:
   confidence: explicit
 - id: ch02-alternating-initial-rule
   source: reconstructed_key
-  relation: method.padiel-alternating-word-initials.pipeline
+  relation: method.padiel-alternating-word-initials.rule
   quotation: take the first letters alternately
   confidence: historically_reported
 - id: ch02-conjuration-decoding-rule
