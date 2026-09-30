@@ -7,6 +7,7 @@ from steg import (
     Text,
     UnitSequence,
     compile_historical_mode,
+    generate_simple_block_space,
     pipeline_from_dict,
 )
 from steg.compiler import compile_method
@@ -104,3 +105,17 @@ def test_boundary_deviations_are_not_silently_approximated():
                 "modifiers": [{"type": "hidden_word_boundary_deviation"}],
             }
         )
+
+
+def test_simple_block_space_has_two_orders_five_by_six():
+    space = generate_simple_block_space()
+    coordinates = {
+        (
+            mode.parameters["starts_with"],
+            mode.parameters["idle_run"],
+            mode.parameters["significant_run"],
+        )
+        for mode in space
+    }
+    assert len(space) == 60
+    assert len(coordinates) == 60
