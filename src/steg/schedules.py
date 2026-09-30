@@ -99,3 +99,86 @@ class AlternatingBlockSchedule:
                 "significant_run": self.significant_run,
             },
         )
+
+
+@dataclass(frozen=True)
+class BoundaryResetSchedule:
+    """Alternating blocks whose cycle can reset at supplied output boundaries.
+
+    Boundaries are expressed as 1-based counts of selected/significant units.
+    They are explicit inputs: this class does not infer hidden-word boundaries
+    from an expected plaintext.
+    """
+
+    idle_run: int
+    significant_run: int
+    boundary_after_selected: tuple[int, ...]
+    starts_with: str = "idle"
+    reset_to_cycle_position: int = 0
+
+    def __post_init__(self) -> None:
+        base = AlternatingBlockSchedule(
+            self.idle_run, self.significant_run, self.starts_with
+        )
+        if any(
+            isinstance(value, bool) or not isinstance(value, int) or value < 1
+            for value in self.boundary_after_selected
+        ):
+            raise ValueError("boundary_after_selected values must be positive integers")
+        if tuple(sorted(set(self.boundary_after_selected))) != self.boundary_after_selected:
+            raise ValueError("boundary_after_selected must be sorted and unique")
+        if (
+            isinstance(self.reset_to_cycle_position, bool)
+            or not isinstance(self.reset_to_cycle_position, int)
+            or not 0 <= self.reset_to_cycle_position < len(base.mask)
+        ):
+            raise ValueError("reset_to_cycle_position must address the base cycle")
+
+    @property
+    def mask(self) -> tuple[int, ...]:
+        return AlternatingBlockSchedule(
+            self.idle_run, self.significant_run, self.starts_with
+        ).mask
+
+    def _state_at(self, index: int) -> tuple[int, bool, int, bool]:
+        if index < 0:
+            raise ValueError("index must be nonnegative")
+        position = 0
+        selected_count = 0
+        boundary_set = set(self.boundary_after_selected)
+        for current in range(index + 1):
+            selected = bool(self.mask[position])
+            boundary_fired = False
+            if selected:
+                selected_count += 1
+            if current == index:
+                boundary_fired = selected and selected_count in boundary_set
+                return position, selected, selected_count, boundary_fired
+            position = (position + 1) % len(self.mask)
+            if selected and selected_count in boundary_set:
+                position = self.reset_to_cycle_position
+        raise AssertionError("unreachable")
+
+    def cycle_position(self, index: int) -> int:
+        return self._state_at(index)[0]
+
+    def selected(self, index: int) -> bool:
+        return self._state_at(index)[1]
+
+    def decision(self, index: int) -> ScheduleDecision:
+        position, selected, selected_count, boundary_fired = self._state_at(index)
+        return ScheduleDecision(
+            selected,
+            position,
+            "significant" if selected else "idle",
+            {
+                "family": "boundary_reset_blocks",
+                "starts_with": self.starts_with,
+                "idle_run": self.idle_run,
+                "significant_run": self.significant_run,
+                "selected_count": selected_count,
+                "boundary_after_selected": self.boundary_after_selected,
+                "boundary_fired": boundary_fired,
+                "reset_to_cycle_position": self.reset_to_cycle_position,
+            },
+        )
