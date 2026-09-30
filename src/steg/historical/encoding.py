@@ -5,6 +5,7 @@ from typing import Any, Mapping
 
 from ..errors import DefinitionError
 from .modes import HistoricalMode
+from .patterns import BlockPattern
 from ..text.tokenization import words
 
 
@@ -59,20 +60,9 @@ def plan_encoding(
         return EncodingPlan(mode.name, secret, constraints)
 
     if mode.family == "block_word_initials":
-        idle_run = _positive(mode.parameters.get("idle_run"), "idle_run", mode.name)
-        significant_run = _positive(
-            mode.parameters.get("significant_run"), "significant_run", mode.name
-        )
-        starts_with = mode.parameters.get("starts_with", "idle")
-        if starts_with not in {"idle", "significant"}:
-            raise DefinitionError(
-                f"mode {mode.name}: starts_with must be 'idle' or 'significant'"
-            )
-        pattern = (
-            ("idle",) * idle_run + ("significant",) * significant_run
-            if starts_with == "idle"
-            else ("significant",) * significant_run + ("idle",) * idle_run
-        )
+        pattern = BlockPattern.from_parameters(
+            mode.parameters, mode.name
+        ).classifications
         constraints: list[CarrierConstraint] = []
         secret_index = 0
         carrier_index = 0
@@ -115,8 +105,3 @@ def validate_carrier(plan: EncodingPlan, carrier: str) -> CarrierValidation:
             )
     return CarrierValidation(not errors, min(len(carrier_words), len(plan.constraints)), tuple(errors))
 
-
-def _positive(value: Any, label: str, name: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
-        raise DefinitionError(f"mode {name}: {label} must be a positive integer")
-    return value
