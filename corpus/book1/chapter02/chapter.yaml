@@ -177,6 +177,16 @@ evidence:
   relation: method.alternating-words-then-characters.pipeline
   quotation: Interlinear decoding of the Padiel sender and receiver conjurations
   confidence: documented_but_garbled
+claims:
+- id: padiel-alternating-word-initials
+  proposition: Padiel selects the initial letters of alternating carrier words.
+  status: reconstructed
+  scope: method.padiel-alternating-word-initials
+  evidence:
+  - ch02-alternating-initial-rule
+  notes:
+  - This claim records the historical rule separately from its executable representation.
+
 methods:
 - methods/alternating-words-then-characters.yaml
 - methods/padiel-alternating-word-initials.yaml
