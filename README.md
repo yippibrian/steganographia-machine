@@ -1,4 +1,4 @@
-# Steganographia Machine 0.8.1
+# Steganographia Machine 0.9.0
 
 This release packages the Chapter I and Chapter II examples displayed at
 `https://trithemius.com/steganographia-english/`.
@@ -32,3 +32,12 @@ python3 run_chapter.py chapter02 --case chapter-ii-second-prayer --trace
 `output:` is the compact machine extraction used for verification. `reading:` is the spaced reading displayed on the website.
 
 The long Chapter I carrier prayer remains an unverified experiment because the website explicitly notes that its hidden example has not been identified.
+
+
+## Historical mode grammar
+
+Version 0.9 adds a historical-mode layer above the linear execution kernel. Named modes can now preserve semantic parameters such as idle/significant run lengths and starting order, then compile to ordinary pipeline stages. Existing direct pipelines remain supported.
+
+Padiel is the first corpus method migrated to this representation. Selection traces now identify units as `idle` or `significant` and include semantic schedule state.
+
+See `docs/HISTORICAL_MODE_ARCHITECTURE.md` for the architecture and the explicit boundary around later stateful deviation modes.
