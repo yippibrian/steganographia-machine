@@ -92,20 +92,29 @@ def test_padiel_corpus_method_uses_historical_mode_and_still_compiles():
     assert compiled.historical_mode.mode.parameters["starts_with"] == "significant"
 
 
-def test_boundary_deviations_are_not_silently_approximated():
-    with pytest.raises(DefinitionError, match="stateful modifier execution"):
-        compile_historical_mode(
-            {
-                "name": "Barmiel",
-                "family": "block_word_initials",
-                "parameters": {
-                    "idle_run": 1,
-                    "significant_run": 2,
-                    "starts_with": "idle",
-                },
-                "modifiers": [{"type": "hidden_word_boundary_deviation"}],
-            }
-        )
+def test_boundary_deviations_require_explicit_case_evidence():
+    spec = {
+        "name": "Boundary-sensitive example",
+        "family": "block_word_initials",
+        "historical_notation": "o..",
+        "parameters": {
+            "idle_run": 1,
+            "significant_run": 2,
+            "starts_with": "idle",
+        },
+        "modifiers": [{"type": "boundary_reset"}],
+    }
+    with pytest.raises(DefinitionError, match="case parameter"):
+        compile_historical_mode(spec)
+
+    compiled = compile_historical_mode(
+        spec,
+        {"boundary_after_selected": [1]},
+    )
+    assert (
+        compiled.compiled_pipeline[1]["select"]["schedule"]["type"]
+        == "boundary_reset_blocks"
+    )
 
 
 def test_simple_block_space_has_two_orders_five_idle_columns_by_six_significant_rows():
