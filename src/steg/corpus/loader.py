@@ -178,7 +178,10 @@ def load_chapter(path: str | Path) -> ChapterDefinition:
             item["status"],
             tuple(item.get("evidence", [])),
             tuple(item.get("notes", [])),
+            item.get("execution", {}),
         )
+        if not isinstance(case.execution, dict):
+            raise ChapterDefinitionError(f"{rel}: execution must be a mapping")
         _add_unique(cases, case.id, case, "case")
 
     chapter = ChapterDefinition(
