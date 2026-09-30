@@ -29,6 +29,8 @@ class SelectionDecision:
     unit: str
     cycle_position: int
     selected: bool
+    classification: str = "significant"
+    schedule_state: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
