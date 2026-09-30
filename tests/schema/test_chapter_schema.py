@@ -10,3 +10,6 @@ def test_chapter1_methods_and_cases_load():
 def test_chapter2_uses_new_schema():
     c=load_chapter(ROOT/"corpus/book1/chapter02")
     assert "padiel-alternating-word-initials" in c.methods
+    claim = c.claims["padiel-alternating-word-initials"]
+    assert claim.status == "reconstructed"
+    assert claim.evidence == ("ch02-alternating-initial-rule",)
