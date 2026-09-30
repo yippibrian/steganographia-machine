@@ -275,7 +275,10 @@ class NormalizeStage:
         else:
             raise TypeError("NormalizeStage requires Text or EmittedStream input")
         if self.lowercase:
-            normalized = normalized.lower()
+            lowered = normalized.lower()
+            if inherited_spans and len(lowered) != len(normalized):
+                inherited_spans = ()
+            normalized = lowered
         if self.substitutions:
             # Arbitrary substitutions can change string length. Until a
             # character-level edit map exists, do not fabricate coordinates.
