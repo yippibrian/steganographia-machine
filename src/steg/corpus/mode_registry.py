@@ -74,12 +74,20 @@ def load_mode_registry(path: str | Path) -> ModeRegistry:
         )
         if not isinstance(entry.id, str) or not entry.id:
             raise ValueError("mode registry id must be a non-empty string")
+        if not isinstance(entry.name, str) or not entry.name:
+            raise ValueError(f"mode {entry.id}: name must be a non-empty string")
         if entry.id in entries:
             raise ValueError(f"duplicate mode registry id: {entry.id}")
         if entry.source_chapter < 1 or entry.source_mode < 1:
             raise ValueError(
                 f"mode {entry.id}: source_chapter and source_mode must be positive integers"
             )
+        if entry.family is not None and not isinstance(entry.family, str):
+            raise ValueError(f"mode {entry.id}: family must be a string or null")
+        if not isinstance(entry.notes, tuple) or not all(
+            isinstance(note, str) for note in entry.notes
+        ):
+            raise ValueError(f"mode {entry.id}: notes must be a list of strings")
         if entry.implementation_status not in ALLOWED_IMPLEMENTATION_STATUSES:
             raise ValueError(
                 f"mode {entry.name}: unknown implementation status "
