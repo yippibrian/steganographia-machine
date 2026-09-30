@@ -23,7 +23,8 @@ class ArtifactRef:
 class MethodDefinition:
     id: str
     title: str
-    pipeline: tuple[Mapping[str, Any], ...]
+    pipeline: tuple[Mapping[str, Any], ...] | None
+    mode: Mapping[str, Any] | None
     evidence: tuple[str, ...]
     notes: tuple[str, ...]
 
