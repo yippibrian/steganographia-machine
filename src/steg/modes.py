@@ -25,7 +25,10 @@ class CompiledMode:
     compiled_pipeline: tuple[Mapping[str, Any], ...]
 
 
-def compile_historical_mode(spec: Mapping[str, Any]) -> CompiledMode:
+def compile_historical_mode(
+    spec: Mapping[str, Any],
+    execution_parameters: Mapping[str, Any] | None = None,
+) -> CompiledMode:
     name = spec.get("name")
     family = spec.get("family")
     parameters = spec.get("parameters", {})
@@ -58,14 +61,13 @@ def compile_historical_mode(spec: Mapping[str, Any]) -> CompiledMode:
         historical_notation, traversal,
     )
 
-    # Keep historically described deviations visible instead of silently
-    # approximating them with a fixed mask. Stateful execution comes next.
-    if modifiers:
-        raise DefinitionError(
-            "historical mode modifiers are recorded but stateful modifier execution is not yet supported"
-        )
-
     compiled_pipeline = _compile_family(mode)
+    if modifiers:
+        compiled_pipeline = _apply_modifiers(
+            mode,
+            compiled_pipeline,
+            execution_parameters or {},
+        )
     if mode.traversal == "reverse":
         compiled_pipeline = (
             compiled_pipeline[0],
@@ -81,6 +83,66 @@ def compile_historical_mode(spec: Mapping[str, Any]) -> CompiledMode:
         pipeline_from_dict({"pipeline": list(compiled_pipeline)}),
         compiled_pipeline,
     )
+
+
+def _apply_modifiers(
+    mode: HistoricalMode,
+    pipeline: tuple[Mapping[str, Any], ...],
+    execution_parameters: Mapping[str, Any],
+) -> tuple[Mapping[str, Any], ...]:
+    result = pipeline
+    for modifier in mode.modifiers:
+        modifier_type = modifier.get("type")
+        if modifier_type != "boundary_reset":
+            raise DefinitionError(
+                f"mode {mode.name}: unsupported modifier {modifier_type!r}"
+            )
+        if mode.family != "block_word_initials":
+            raise DefinitionError(
+                f"mode {mode.name}: boundary_reset requires block_word_initials"
+            )
+        parameter_name = modifier.get(
+            "boundary_parameter", "boundary_after_selected"
+        )
+        boundaries = execution_parameters.get(parameter_name)
+        if boundaries is None:
+            raise DefinitionError(
+                f"mode {mode.name}: boundary-sensitive execution requires "
+                f"case parameter {parameter_name!r}"
+            )
+        if (
+            not isinstance(boundaries, (list, tuple))
+            or not all(
+                isinstance(value, int) and not isinstance(value, bool) and value > 0
+                for value in boundaries
+            )
+        ):
+            raise DefinitionError(
+                f"mode {mode.name}: {parameter_name} must contain positive integers"
+            )
+        reset = modifier.get("reset_to_cycle_position", 0)
+        schedule = {
+            "type": "boundary_reset_blocks",
+            "idle_run": mode.parameters.get("idle_run"),
+            "significant_run": mode.parameters.get("significant_run"),
+            "starts_with": mode.parameters.get("starts_with", "idle"),
+            "boundary_after_selected": list(boundaries),
+            "reset_to_cycle_position": reset,
+        }
+        replaced = False
+        stages = []
+        for stage in result:
+            if not replaced and "select" in stage:
+                stages.append({"select": {"schedule": schedule}})
+                replaced = True
+            else:
+                stages.append(stage)
+        if not replaced:
+            raise DefinitionError(
+                f"mode {mode.name}: boundary_reset found no selection stage"
+            )
+        result = tuple(stages)
+    return result
 
 
 def _compile_family(mode: HistoricalMode) -> tuple[Mapping[str, Any], ...]:
