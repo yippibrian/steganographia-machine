@@ -96,9 +96,18 @@ def load_chapter(path: str | Path) -> ChapterDefinition:
         raise ChapterDefinitionError(
             f"{root/'chapter.yaml'}: missing {', '.join(missing)}"
         )
+    if not isinstance(data["protocol"], dict):
+        raise ChapterDefinitionError("protocol: expected a mapping")
+    for key in ("artifacts", "evidence", "methods", "cases"):
+        if not isinstance(data[key], list):
+            raise ChapterDefinitionError(f"{key}: expected a list")
+    if not isinstance(data.get("claims", []), list):
+        raise ChapterDefinitionError("claims: expected a list")
 
     artifacts: dict[str, ArtifactRef] = {}
     for item in data["artifacts"]:
+        if not isinstance(item, dict):
+            raise ChapterDefinitionError("artifact entries must be mappings")
         artifact = ArtifactRef(
             id=item["id"],
             role=item["role"],
@@ -119,6 +128,8 @@ def load_chapter(path: str | Path) -> ChapterDefinition:
 
     evidence: dict[str, EvidenceRef] = {}
     for item in data["evidence"]:
+        if not isinstance(item, dict):
+            raise ChapterDefinitionError("evidence entries must be mappings")
         ref = EvidenceRef(
             item["id"],
             item["source"],
@@ -130,6 +141,8 @@ def load_chapter(path: str | Path) -> ChapterDefinition:
 
     claims: dict[str, ClaimRef] = {}
     for item in data.get("claims", []):
+        if not isinstance(item, dict):
+            raise ChapterDefinitionError("claim entries must be mappings")
         claim = ClaimRef(
             id=item["id"],
             proposition=item["proposition"],
@@ -145,6 +158,8 @@ def load_chapter(path: str | Path) -> ChapterDefinition:
 
     methods: dict[str, MethodDefinition] = {}
     for rel in data["methods"]:
+        if not isinstance(rel, str) or not rel:
+            raise ChapterDefinitionError("method paths must be non-empty strings")
         item = _read_yaml(root / rel)
         pipeline = item.get("pipeline")
         mode = item.get("mode")
@@ -168,6 +183,8 @@ def load_chapter(path: str | Path) -> ChapterDefinition:
 
     cases: dict[str, CipherCase] = {}
     for rel in data["cases"]:
+        if not isinstance(rel, str) or not rel:
+            raise ChapterDefinitionError("case paths must be non-empty strings")
         item = _read_yaml(root / rel)
         case = CipherCase(
             item["id"],
