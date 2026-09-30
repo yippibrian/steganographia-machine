@@ -13,3 +13,11 @@ def test_chapter2_uses_new_schema():
     claim = c.claims["padiel-alternating-word-initials"]
     assert claim.status == "reconstructed"
     assert claim.evidence == ("ch02-alternating-initial-rule",)
+
+
+def test_chapter1_named_pamersiel_rule_uses_historical_mode():
+    c = load_chapter(ROOT / "corpus/book1/chapter01")
+    method = c.methods["pamersiel-word-initials"]
+    assert method.pipeline is None
+    assert method.mode["name"] == "Pamersiel"
+    assert c.claims["pamersiel-word-initials"].status == "reconstructed"
