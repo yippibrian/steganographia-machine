@@ -4,6 +4,7 @@ from typing import Any
 import yaml
 from .models import ArtifactRef, ChapterDefinition, CipherCase, EvidenceRef, MethodDefinition
 from ..loader import DefinitionError, pipeline_from_dict
+from ..modes import compile_historical_mode
 
 class ChapterDefinitionError(ValueError):
     pass
@@ -66,9 +67,21 @@ def load_chapter(path: str | Path) -> ChapterDefinition:
     for rel in data["methods"]:
         item = _read_yaml(root / rel)
         pipeline = item.get("pipeline")
-        if not isinstance(pipeline, list):
+        mode = item.get("mode")
+        if (pipeline is None) == (mode is None):
+            raise ChapterDefinitionError(f"{rel}: define exactly one of pipeline or mode")
+        if pipeline is not None and not isinstance(pipeline, list):
             raise ChapterDefinitionError(f"{rel}: pipeline must be a list")
-        method = MethodDefinition(item["id"], item["title"], tuple(pipeline), tuple(item.get("evidence", [])), tuple(item.get("notes", [])))
+        if mode is not None and not isinstance(mode, dict):
+            raise ChapterDefinitionError(f"{rel}: mode must be a mapping")
+        method = MethodDefinition(
+            item["id"],
+            item["title"],
+            tuple(pipeline) if pipeline is not None else None,
+            mode,
+            tuple(item.get("evidence", [])),
+            tuple(item.get("notes", [])),
+        )
         _add_unique(methods, method.id, method, "method")
 
     cases: dict[str, CipherCase] = {}
@@ -85,25 +98,43 @@ def load_chapter(path: str | Path) -> ChapterDefinition:
 def validate_chapter(chapter: ChapterDefinition) -> None:
     errors: list[str] = []
     for artifact in chapter.artifacts.values():
-        if not artifact.path.is_file(): errors.append(f"artifact {artifact.id} does not exist: {artifact.path}")
+        if not artifact.path.is_file():
+            errors.append(f"artifact {artifact.id} does not exist: {artifact.path}")
     for method in chapter.methods.values():
         for ref in method.evidence:
-            if ref not in chapter.evidence: errors.append(f"method {method.id}: unknown evidence {ref}")
-        try: pipeline_from_dict({"pipeline": list(method.pipeline)})
-        except DefinitionError as exc: errors.append(f"method {method.id}: {exc}")
+            if ref not in chapter.evidence:
+                errors.append(f"method {method.id}: unknown evidence {ref}")
+        try:
+            if method.pipeline is not None:
+                pipeline_from_dict({"pipeline": list(method.pipeline)})
+            else:
+                compile_historical_mode(method.mode or {})
+        except DefinitionError as exc:
+            errors.append(f"method {method.id}: {exc}")
     for case in chapter.cases.values():
-        if case.status not in ALLOWED_CASE_STATUSES: errors.append(f"case {case.id}: unknown status {case.status}")
-        if case.method_id not in chapter.methods: errors.append(f"case {case.id}: unknown method {case.method_id}")
-        if case.input_artifact not in chapter.artifacts: errors.append(f"case {case.id}: unknown input artifact {case.input_artifact}")
-        if case.expected_artifact and case.expected_artifact not in chapter.artifacts: errors.append(f"case {case.id}: unknown expected artifact {case.expected_artifact}")
-        if case.reading_artifact and case.reading_artifact not in chapter.artifacts: errors.append(f"case {case.id}: unknown reading artifact {case.reading_artifact}")
-        if case.status == "verified" and not case.expected_artifact: errors.append(f"case {case.id}: verified case requires expected_artifact")
+        if case.status not in ALLOWED_CASE_STATUSES:
+            errors.append(f"case {case.id}: unknown status {case.status}")
+        if case.method_id not in chapter.methods:
+            errors.append(f"case {case.id}: unknown method {case.method_id}")
+        if case.input_artifact not in chapter.artifacts:
+            errors.append(f"case {case.id}: unknown input artifact {case.input_artifact}")
+        if case.expected_artifact and case.expected_artifact not in chapter.artifacts:
+            errors.append(f"case {case.id}: unknown expected artifact {case.expected_artifact}")
+        if case.reading_artifact and case.reading_artifact not in chapter.artifacts:
+            errors.append(f"case {case.id}: unknown reading artifact {case.reading_artifact}")
+        if case.status == "verified" and not case.expected_artifact:
+            errors.append(f"case {case.id}: verified case requires expected_artifact")
         for ref in case.evidence:
-            if ref not in chapter.evidence: errors.append(f"case {case.id}: unknown evidence {ref}")
+            if ref not in chapter.evidence:
+                errors.append(f"case {case.id}: unknown evidence {ref}")
     for path in REQUIRED_PROVENANCE_PATHS:
-        if path not in chapter.provenance: errors.append(f"provenance missing {path}")
+        if path not in chapter.provenance:
+            errors.append(f"provenance missing {path}")
     for path, refs in chapter.provenance.items():
         for ref in refs:
-            if ref not in chapter.evidence: errors.append(f"provenance {path}: unknown evidence {ref}")
-            elif chapter.evidence[ref].relation != path: errors.append(f"provenance {path}: evidence {ref} relation mismatch")
-    if errors: raise ChapterDefinitionError("; ".join(errors))
+            if ref not in chapter.evidence:
+                errors.append(f"provenance {path}: unknown evidence {ref}")
+            elif chapter.evidence[ref].relation != path:
+                errors.append(f"provenance {path}: evidence {ref} relation mismatch")
+    if errors:
+        raise ChapterDefinitionError("; ".join(errors))
