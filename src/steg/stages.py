@@ -9,6 +9,7 @@ from .models import (
     PipelineValue,
     ProjectionDecision,
     SelectionDecision,
+    SourceSpan,
     Text,
     TraceEvent,
     UnitSequence,
@@ -22,6 +23,16 @@ class Stage(Protocol):
     def execute(self, value: PipelineValue) -> tuple[PipelineValue, TraceEvent]: ...
 
 
+def _span(text: str, start: int, end: int) -> SourceSpan:
+    line = text.count("\n", 0, start) + 1
+    last_newline = text.rfind("\n", 0, start)
+    column = start - last_newline
+    end_line = text.count("\n", 0, end) + 1
+    end_last_newline = text.rfind("\n", 0, end)
+    end_column = end - end_last_newline
+    return SourceSpan(start, end, line, column, end_line, end_column)
+
+
 @dataclass(frozen=True)
 class UnitizeWordsStage:
     name: str = "unitize_words"
@@ -29,9 +40,43 @@ class UnitizeWordsStage:
     def execute(self, value: PipelineValue) -> tuple[PipelineValue, TraceEvent]:
         if not isinstance(value, Text):
             raise TypeError("UnitizeWordsStage requires Text input")
-        units = tuple(re.findall(r"\b[^\W\d_]+(?:['’-][^\W\d_]+)*\b", value.value, re.UNICODE))
-        output = UnitSequence(units=units, unit_type="word")
-        return output, TraceEvent(self.name, type(value).__name__, type(output).__name__, {"unit_type": "word", "units": units})
+        matches = tuple(re.finditer(r"\b[^\W\d_]+(?:['’-][^\W\d_]+)*\b", value.value, re.UNICODE))
+        units = tuple(match.group(0) for match in matches)
+        spans = tuple(_span(value.value, match.start(), match.end()) for match in matches)
+        output = UnitSequence(units=units, unit_type="word", spans=spans)
+        return output, TraceEvent(
+            self.name,
+            type(value).__name__,
+            type(output).__name__,
+            {"unit_type": "word", "units": units, "spans": spans},
+        )
+
+
+@dataclass(frozen=True)
+class UnitizeLinesStage:
+    name: str = "unitize_lines"
+
+    def execute(self, value: PipelineValue) -> tuple[PipelineValue, TraceEvent]:
+        if not isinstance(value, Text):
+            raise TypeError("UnitizeLinesStage requires Text input")
+        raw_lines = value.value.splitlines(keepends=True)
+        if not raw_lines and value.value == "":
+            raw_lines = [""]
+        units: list[str] = []
+        spans: list[SourceSpan] = []
+        offset = 0
+        for raw in raw_lines:
+            unit = raw.rstrip("\r\n")
+            units.append(unit)
+            spans.append(_span(value.value, offset, offset + len(unit)))
+            offset += len(raw)
+        output = UnitSequence(tuple(units), "line", tuple(spans))
+        return output, TraceEvent(
+            self.name,
+            type(value).__name__,
+            type(output).__name__,
+            {"unit_type": "line", "units": tuple(units), "spans": tuple(spans)},
+        )
 
 
 @dataclass(frozen=True)
@@ -46,9 +91,46 @@ class UnitizeCharactersStage:
             raw = value.value
         else:
             raise TypeError("UnitizeCharactersStage requires Text or EmittedStream input")
-        units = tuple(raw if self.include_whitespace else (c for c in raw if not c.isspace()))
-        output = UnitSequence(units=units, unit_type="character")
-        return output, TraceEvent(self.name, type(value).__name__, type(output).__name__, {"unit_type": "character", "units": units})
+        indexed = tuple(
+            (index, char)
+            for index, char in enumerate(raw)
+            if self.include_whitespace or not char.isspace()
+        )
+        units = tuple(char for _, char in indexed)
+        spans = tuple(_span(raw, index, index + 1) for index, _ in indexed)
+        output = UnitSequence(units=units, unit_type="character", spans=spans)
+        return output, TraceEvent(
+            self.name,
+            type(value).__name__,
+            type(output).__name__,
+            {"unit_type": "character", "units": units, "spans": spans},
+        )
+
+
+@dataclass(frozen=True)
+class TraverseStage:
+    direction: str = "forward"
+    name: str = "traverse"
+
+    def execute(self, value: PipelineValue) -> tuple[PipelineValue, TraceEvent]:
+        if not isinstance(value, UnitSequence):
+            raise TypeError("TraverseStage requires UnitSequence input")
+        if self.direction not in {"forward", "reverse"}:
+            raise ValueError(f"unsupported traversal direction: {self.direction}")
+        if self.direction == "forward":
+            output = value
+        else:
+            output = UnitSequence(
+                tuple(reversed(value.units)),
+                value.unit_type,
+                tuple(reversed(value.spans)) if value.spans else (),
+            )
+        return output, TraceEvent(
+            self.name,
+            type(value).__name__,
+            type(output).__name__,
+            {"direction": self.direction, "unit_type": value.unit_type},
+        )
 
 
 @dataclass(frozen=True)
@@ -70,11 +152,18 @@ class SelectStage:
                     selected=schedule_decision.selected,
                     classification=schedule_decision.classification,
                     schedule_state=schedule_decision.state,
+                    source_span=value.spans[index] if value.spans else None,
                 )
             )
         decisions_tuple = tuple(decisions)
-        selected = tuple(decision.unit for decision in decisions_tuple if decision.selected)
-        output = UnitSequence(units=selected, unit_type=value.unit_type)
+        selected_indices = tuple(d.index for d in decisions_tuple if d.selected)
+        selected = tuple(value.units[index] for index in selected_indices)
+        selected_spans = (
+            tuple(value.spans[index] for index in selected_indices)
+            if value.spans
+            else ()
+        )
+        output = UnitSequence(selected, value.unit_type, selected_spans)
         return output, TraceEvent(
             self.name,
             type(value).__name__,
@@ -99,14 +188,36 @@ class ProjectStage:
         if self.part == "initial":
             pairs = tuple((unit, unit[0]) for unit in value.units if unit)
             output_type = "character"
+        elif self.part == "final":
+            pairs = tuple((unit, unit[-1]) for unit in value.units if unit)
+            output_type = "character"
         elif self.part == "whole":
             pairs = tuple((unit, unit) for unit in value.units)
             output_type = value.unit_type
         else:
             raise ValueError(f"unsupported projection part: {self.part}")
         projected = tuple(result for _, result in pairs)
-        decisions = tuple(ProjectionDecision(i, unit, result) for i, (unit, result) in enumerate(pairs))
-        output = UnitSequence(units=projected, unit_type=output_type)
+        # Empty units are skipped by initial/final projection. Line unitization can
+        # create empty units, so align spans by walking the original units.
+        source_indices = tuple(
+            i for i, unit in enumerate(value.units)
+            if self.part == "whole" or bool(unit)
+        )
+        projected_spans = (
+            tuple(value.spans[i] for i in source_indices)
+            if value.spans
+            else ()
+        )
+        decisions = tuple(
+            ProjectionDecision(
+                i,
+                unit,
+                result,
+                projected_spans[i] if projected_spans else None,
+            )
+            for i, (unit, result) in enumerate(pairs)
+        )
+        output = UnitSequence(projected, output_type, projected_spans)
         return output, TraceEvent(
             self.name,
             type(value).__name__,
@@ -125,7 +236,12 @@ class ConcatenateStage:
             raise TypeError("ConcatenateStage requires UnitSequence input")
         joined = self.separator.join(value.units)
         output = EmittedStream(joined)
-        return output, TraceEvent(self.name, type(value).__name__, type(output).__name__, {"separator": self.separator, "value": joined})
+        return output, TraceEvent(
+            self.name,
+            type(value).__name__,
+            type(output).__name__,
+            {"separator": self.separator, "value": joined},
+        )
 
 
 @dataclass(frozen=True)
@@ -149,4 +265,9 @@ class NormalizeStage:
         if self.remove_whitespace:
             normalized = "".join(normalized.split())
         output = EmittedStream(normalized)
-        return output, TraceEvent(self.name, type(value).__name__, type(output).__name__, {"value": normalized})
+        return output, TraceEvent(
+            self.name,
+            type(value).__name__,
+            type(output).__name__,
+            {"value": normalized},
+        )
