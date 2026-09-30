@@ -69,3 +69,18 @@ def test_geometry_survives_concatenate_and_character_reunitization():
     # to the second line rather than to positions in the emitted stream.
     assert result.value.spans[0].line == 1
     assert result.value.spans[-1].line == 2
+
+
+def test_projection_trace_keeps_original_index_when_empty_units_are_skipped():
+    pipeline = pipeline_from_dict(
+        {
+            "pipeline": [
+                {"unitize": {"unit": "line"}},
+                {"project": {"part": "initial"}},
+            ]
+        }
+    )
+    result = pipeline.execute(Text("Alpha\n\nBeta"))
+    decisions = result.trace[1].details["decisions"]
+    assert [decision.index for decision in decisions] == [0, 2]
+    assert [decision.projected for decision in decisions] == ["A", "B"]
