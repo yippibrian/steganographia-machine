@@ -252,7 +252,7 @@ def validate_chapter(chapter: ChapterDefinition) -> None:
             if method.pipeline is not None:
                 pipeline_from_dict({"pipeline": list(method.pipeline)})
             else:
-                compile_historical_mode(method.mode or {})
+                compile_historical_mode(method.mode or {}, allow_unbound_modifiers=True)
         except DefinitionError as exc:
             errors.append(f"method {method.id}: {exc}")
 
