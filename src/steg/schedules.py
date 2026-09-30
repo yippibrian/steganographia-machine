@@ -18,6 +18,8 @@ class Schedule(Protocol):
 
     def decision(self, index: int) -> ScheduleDecision: ...
 
+    def decisions(self, count: int) -> tuple[ScheduleDecision, ...]: ...
+
     def selected(self, index: int) -> bool: ...
 
     def cycle_position(self, index: int) -> int: ...
@@ -55,6 +57,9 @@ class MaskSchedule:
             "significant" if selected else "idle",
             {"phase": self.phase, "family": "mask"},
         )
+
+    def decisions(self, count: int) -> tuple[ScheduleDecision, ...]:
+        return tuple(self.decision(index) for index in range(count))
 
 
 @dataclass(frozen=True)
@@ -99,6 +104,9 @@ class AlternatingBlockSchedule:
                 "significant_run": self.significant_run,
             },
         )
+
+    def decisions(self, count: int) -> tuple[ScheduleDecision, ...]:
+        return tuple(self.decision(index) for index in range(count))
 
 
 @dataclass(frozen=True)
@@ -166,19 +174,38 @@ class BoundaryResetSchedule:
         return self._state_at(index)[1]
 
     def decision(self, index: int) -> ScheduleDecision:
-        position, selected, selected_count, boundary_fired = self._state_at(index)
-        return ScheduleDecision(
-            selected,
-            position,
-            "significant" if selected else "idle",
-            {
-                "family": "boundary_reset_blocks",
-                "starts_with": self.starts_with,
-                "idle_run": self.idle_run,
-                "significant_run": self.significant_run,
-                "selected_count": selected_count,
-                "boundary_after_selected": self.boundary_after_selected,
-                "boundary_fired": boundary_fired,
-                "reset_to_cycle_position": self.reset_to_cycle_position,
-            },
-        )
+        return self.decisions(index + 1)[index]
+
+    def decisions(self, count: int) -> tuple[ScheduleDecision, ...]:
+        if count < 0:
+            raise ValueError("count must be nonnegative")
+        position = 0
+        selected_count = 0
+        boundary_set = set(self.boundary_after_selected)
+        result: list[ScheduleDecision] = []
+        for _ in range(count):
+            selected = bool(self.mask[position])
+            if selected:
+                selected_count += 1
+            boundary_fired = selected and selected_count in boundary_set
+            result.append(
+                ScheduleDecision(
+                    selected,
+                    position,
+                    "significant" if selected else "idle",
+                    {
+                        "family": "boundary_reset_blocks",
+                        "starts_with": self.starts_with,
+                        "idle_run": self.idle_run,
+                        "significant_run": self.significant_run,
+                        "selected_count": selected_count,
+                        "boundary_after_selected": self.boundary_after_selected,
+                        "boundary_fired": boundary_fired,
+                        "reset_to_cycle_position": self.reset_to_cycle_position,
+                    },
+                )
+            )
+            position = (position + 1) % len(self.mask)
+            if boundary_fired:
+                position = self.reset_to_cycle_position
+        return tuple(result)
