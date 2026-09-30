@@ -98,6 +98,19 @@ This distinction is intentional:
 
 The current boundary-reset primitive is generic machinery. It does not by itself assert that Barmiel, Asiriel, Malgaras, or another named mode has been completely reconstructed.
 
+## Encoding as constraints
+
+The encoder does not attempt to generate plausible Latin or German cover prose.
+
+For supported forward modes it compiles a secret into carrier-slot constraints:
+
+- idle slots have no required initial;
+- significant slots carry the next required secret initial.
+
+A candidate carrier can then be checked against that plan. This gives the project an independent construction-side test while keeping natural-language composition outside the mechanical cipher rule.
+
+Stateful boundary-sensitive encoding and reverse-traversal encoding remain deliberate gaps until their construction semantics are modeled explicitly.
+
 ## Claims and hypotheses
 
 A chapter may contain structured claims independently of executable methods.
