@@ -96,3 +96,27 @@ def _only(parameters: Mapping[str, Any], allowed: set[str], name: str) -> None:
     unknown = set(parameters) - allowed
     if unknown:
         raise DefinitionError(f"mode {name}: unknown parameter(s): {', '.join(sorted(unknown))}")
+
+
+def generate_simple_block_space() -> tuple[HistoricalMode, ...]:
+    """Generate the 60 structural cells in the two-order, five-by-six table.
+
+    The generator deliberately does not assign historical spirit names to cells.
+    Names belong in evidenced corpus records, not in generated structure.
+    """
+    modes = []
+    for starts_with in ("idle", "significant"):
+        for significant_run in range(1, 6):
+            for idle_run in range(1, 7):
+                modes.append(
+                    HistoricalMode(
+                        name=f"generated-{starts_with}-{idle_run}-{significant_run}",
+                        family="block_word_initials",
+                        parameters={
+                            "idle_run": idle_run,
+                            "significant_run": significant_run,
+                            "starts_with": starts_with,
+                        },
+                    )
+                )
+    return tuple(modes)
