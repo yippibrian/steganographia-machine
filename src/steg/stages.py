@@ -18,6 +18,7 @@ from .schedules import Schedule
 
 class Stage(Protocol):
     name: str
+
     def execute(self, value: PipelineValue) -> tuple[PipelineValue, TraceEvent]: ...
 
 
@@ -58,18 +59,33 @@ class SelectStage:
     def execute(self, value: PipelineValue) -> tuple[PipelineValue, TraceEvent]:
         if not isinstance(value, UnitSequence):
             raise TypeError("SelectStage requires UnitSequence input")
-        decisions = tuple(
-            SelectionDecision(index=i, unit=unit, cycle_position=self.schedule.cycle_position(i), selected=self.schedule.selected(i))
-            for i, unit in enumerate(value.units)
-        )
-        selected = tuple(d.unit for d in decisions if d.selected)
+        decisions = []
+        for index, unit in enumerate(value.units):
+            schedule_decision = self.schedule.decision(index)
+            decisions.append(
+                SelectionDecision(
+                    index=index,
+                    unit=unit,
+                    cycle_position=schedule_decision.cycle_position,
+                    selected=schedule_decision.selected,
+                    classification=schedule_decision.classification,
+                    schedule_state=schedule_decision.state,
+                )
+            )
+        decisions_tuple = tuple(decisions)
+        selected = tuple(decision.unit for decision in decisions_tuple if decision.selected)
         output = UnitSequence(units=selected, unit_type=value.unit_type)
-        return output, TraceEvent(self.name, type(value).__name__, type(output).__name__, {
-            "unit_type": value.unit_type,
-            "mask": self.schedule.mask,
-            "decisions": decisions,
-            "selected": selected,
-        })
+        return output, TraceEvent(
+            self.name,
+            type(value).__name__,
+            type(output).__name__,
+            {
+                "unit_type": value.unit_type,
+                "mask": self.schedule.mask,
+                "decisions": decisions_tuple,
+                "selected": selected,
+            },
+        )
 
 
 @dataclass(frozen=True)
@@ -91,11 +107,12 @@ class ProjectStage:
         projected = tuple(result for _, result in pairs)
         decisions = tuple(ProjectionDecision(i, unit, result) for i, (unit, result) in enumerate(pairs))
         output = UnitSequence(units=projected, unit_type=output_type)
-        return output, TraceEvent(self.name, type(value).__name__, type(output).__name__, {
-            "part": self.part,
-            "decisions": decisions,
-            "projected": projected,
-        })
+        return output, TraceEvent(
+            self.name,
+            type(value).__name__,
+            type(output).__name__,
+            {"part": self.part, "decisions": decisions, "projected": projected},
+        )
 
 
 @dataclass(frozen=True)
