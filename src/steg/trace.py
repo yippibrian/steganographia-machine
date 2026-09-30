@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .models import ExecutionResult, ProjectionDecision, SelectionDecision
+from .engine.models import ExecutionResult, ProjectionDecision, SelectionDecision
 
 
 def render_trace(result: ExecutionResult) -> str:

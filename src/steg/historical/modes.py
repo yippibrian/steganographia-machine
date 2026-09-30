@@ -3,8 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from .loader import DefinitionError, pipeline_from_dict
-from .pipeline import Pipeline
+from ..errors import DefinitionError
+from ..engine.spec import pipeline_from_dict
+from ..engine.pipeline import Pipeline
 
 
 @dataclass(frozen=True)

@@ -1,10 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from ..corpus.models import ChapterDefinition, CipherCase, MethodDefinition
-from ..loader import pipeline_from_dict
-from ..models import ExecutionResult, Text
-from ..modes import CompiledMode, compile_historical_mode
-from ..pipeline import Pipeline
+from ..engine.spec import pipeline_from_dict
+from ..engine.models import ExecutionResult, Text
+from ..historical.modes import CompiledMode, compile_historical_mode
+from ..engine.pipeline import Pipeline
 
 @dataclass(frozen=True)
 class CompiledMethod:

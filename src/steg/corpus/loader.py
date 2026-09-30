@@ -13,8 +13,9 @@ from .models import (
     EvidenceRef,
     MethodDefinition,
 )
-from ..loader import DefinitionError, pipeline_from_dict
-from ..modes import compile_historical_mode
+from ..errors import DefinitionError
+from ..engine.spec import pipeline_from_dict
+from ..historical.modes import compile_historical_mode
 
 
 class ChapterDefinitionError(ValueError):

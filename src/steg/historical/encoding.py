@@ -3,8 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from .loader import DefinitionError
+from ..errors import DefinitionError
 from .modes import HistoricalMode
+from ..text.tokenization import words
 
 
 @dataclass(frozen=True)
@@ -94,34 +95,25 @@ def plan_encoding(
 
 def validate_carrier(plan: EncodingPlan, carrier: str) -> CarrierValidation:
     """Check whether a candidate carrier satisfies an encoding plan."""
-    import re
-
-    words = tuple(
-        match.group(0)
-        for match in re.finditer(
-            r"\b[^\W\d_]+(?:['’-][^\W\d_]+)*\b",
-            carrier,
-            re.UNICODE,
-        )
-    )
+    carrier_words = words(carrier)
     errors: list[str] = []
-    if len(words) < len(plan.constraints):
+    if len(carrier_words) < len(plan.constraints):
         errors.append(
-            f"carrier has {len(words)} words but plan requires at least "
+            f"carrier has {len(carrier_words)} words but plan requires at least "
             f"{len(plan.constraints)}"
         )
     for constraint in plan.constraints:
-        if constraint.index >= len(words):
+        if constraint.index >= len(carrier_words):
             break
         if constraint.required_initial is None:
             continue
-        actual = words[constraint.index][0]
+        actual = carrier_words[constraint.index][0]
         if actual.casefold() != constraint.required_initial.casefold():
             errors.append(
                 f"word {constraint.index + 1} begins with {actual!r}; "
                 f"expected {constraint.required_initial!r}"
             )
-    return CarrierValidation(not errors, min(len(words), len(plan.constraints)), tuple(errors))
+    return CarrierValidation(not errors, min(len(carrier_words), len(plan.constraints)), tuple(errors))
 
 
 def _positive(value: Any, label: str, name: str) -> int:

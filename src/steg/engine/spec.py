@@ -2,12 +2,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 import yaml
+from ..errors import DefinitionError
 from .pipeline import Pipeline
 from .schedules import AlternatingBlockSchedule, BoundaryResetSchedule, MaskSchedule
 from .stages import ConcatenateStage, NormalizeStage, ProjectStage, SelectStage, TraverseStage, UnitizeCharactersStage, UnitizeLinesStage, UnitizeWordsStage
-
-class DefinitionError(ValueError):
-    pass
 
 
 def _read_yaml(path: Path) -> dict[str, Any]:

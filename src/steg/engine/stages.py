@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -9,28 +8,19 @@ from .models import (
     PipelineValue,
     ProjectionDecision,
     SelectionDecision,
-    SourceSpan,
     Text,
     TraceEvent,
     UnitSequence,
 )
 from .schedules import Schedule
+from ..text.geometry import SourceSpan, source_span
+from ..text.tokenization import word_matches
 
 
 class Stage(Protocol):
     name: str
 
     def execute(self, value: PipelineValue) -> tuple[PipelineValue, TraceEvent]: ...
-
-
-def _span(text: str, start: int, end: int) -> SourceSpan:
-    line = text.count("\n", 0, start) + 1
-    last_newline = text.rfind("\n", 0, start)
-    column = start - last_newline
-    end_line = text.count("\n", 0, end) + 1
-    end_last_newline = text.rfind("\n", 0, end)
-    end_column = end - end_last_newline
-    return SourceSpan(start, end, line, column, end_line, end_column)
 
 
 @dataclass(frozen=True)
@@ -40,9 +30,9 @@ class UnitizeWordsStage:
     def execute(self, value: PipelineValue) -> tuple[PipelineValue, TraceEvent]:
         if not isinstance(value, Text):
             raise TypeError("UnitizeWordsStage requires Text input")
-        matches = tuple(re.finditer(r"\b[^\W\d_]+(?:['’-][^\W\d_]+)*\b", value.value, re.UNICODE))
+        matches = word_matches(value.value)
         units = tuple(match.group(0) for match in matches)
-        spans = tuple(_span(value.value, match.start(), match.end()) for match in matches)
+        spans = tuple(source_span(value.value, match.start(), match.end()) for match in matches)
         output = UnitSequence(units=units, unit_type="word", spans=spans)
         return output, TraceEvent(
             self.name,
@@ -68,7 +58,7 @@ class UnitizeLinesStage:
         for raw in raw_lines:
             unit = raw.rstrip("\r\n")
             units.append(unit)
-            spans.append(_span(value.value, offset, offset + len(unit)))
+            spans.append(source_span(value.value, offset, offset + len(unit)))
             offset += len(raw)
         output = UnitSequence(tuple(units), "line", tuple(spans))
         return output, TraceEvent(
@@ -102,7 +92,7 @@ class UnitizeCharactersStage:
         spans = (
             tuple(inherited_spans[index] for index, _ in indexed)
             if inherited_spans
-            else tuple(_span(raw, index, index + 1) for index, _ in indexed)
+            else tuple(source_span(raw, index, index + 1) for index, _ in indexed)
         )
         output = UnitSequence(units=units, unit_type="character", spans=spans)
         return output, TraceEvent(

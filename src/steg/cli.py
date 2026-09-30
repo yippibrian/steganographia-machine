@@ -7,9 +7,10 @@ from pathlib import Path
 
 import yaml
 
-from .loader import DefinitionError, pipeline_from_dict
-from .models import Text
-from .modes import compile_historical_mode
+from .errors import DefinitionError
+from .engine.spec import pipeline_from_dict
+from .engine.models import Text
+from .historical.modes import compile_historical_mode
 from .trace import render_trace
 from .verifier import result_text
 

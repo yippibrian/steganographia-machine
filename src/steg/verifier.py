@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from .models import EmittedStream, ExecutionResult, Text, UnitSequence
+from .engine.models import EmittedStream, ExecutionResult, Text, UnitSequence
 
 @dataclass(frozen=True)
 class VerificationResult:

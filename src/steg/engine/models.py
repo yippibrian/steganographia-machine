@@ -3,22 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Union
 
+from ..text.geometry import SourceSpan
+
 
 @dataclass(frozen=True)
 class Text:
     value: str
 
-
-@dataclass(frozen=True)
-class SourceSpan:
-    """Coordinates in the input artifact before extraction loses geometry."""
-
-    start: int
-    end: int
-    line: int
-    column: int
-    end_line: int
-    end_column: int
 
 
 @dataclass(frozen=True)
