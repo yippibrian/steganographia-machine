@@ -176,3 +176,16 @@ def test_explicit_boundaries_can_reset_a_block_schedule_without_plaintext_infere
         "idle", "significant", "idle", "significant", "significant", "idle"
     ]
     assert decisions[1].state["boundary_fired"] is True
+
+
+def test_historical_mode_can_compile_reverse_traversal_explicitly():
+    compiled = compile_historical_mode(
+        {
+            "name": "Reverse experiment",
+            "family": "word_initials",
+            "traversal": "reverse",
+            "parameters": {"selection": "all"},
+        }
+    )
+    assert compiled.pipeline.execute(Text("Alpha beta Gamma")).value.value == "GbA"
+    assert compiled.compiled_pipeline[1] == {"traverse": {"direction": "reverse"}}
