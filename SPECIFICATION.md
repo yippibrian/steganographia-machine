@@ -294,7 +294,7 @@ For consistency with the current chapters, every chapter SHOULD contain:
       recipient:
       carrier:
 
-Version 0.9.0 does not validate the complete internal schema of these sections. It does, however, require provenance entries for six specific protocol paths.
+Version 0.9.0 does not constrain every field inside these sections. It does require provenance for six protocol paths and verifies that every declared provenance path exists in the protocol mapping.
 
 Additional sections and fields MAY be added.
 
@@ -374,7 +374,7 @@ Example:
 
 The path `protocol.sender.invocation_artifact` MUST have provenance.
 
-The named artifact SHOULD exist in the chapter's artifact declarations. Version 0.9.0 does not directly validate that relationship through the protocol field.
+The named artifact MUST exist in the chapter's artifact declarations when it is not null. Version 0.9.0 validates sender and recipient invocation artifacts, and validates a non-null sign artifact.
 
 ### 6.7 `recipient`
 
@@ -431,12 +431,10 @@ Version 0.9.0 requires all of the following:
 
 For each provenance entry:
 
-1. Every referenced evidence identifier MUST exist.
-2. The evidence record's `relation` MUST exactly equal the provenance path.
-
-Version 0.9.0 does not currently verify that every dotted provenance path actually exists in the `protocol` mapping. Authors SHOULD nevertheless ensure that it does.
-
-A provenance list may technically be empty in version 0.9.0, but it SHOULD contain at least one evidence identifier.
+1. The dotted path MUST exist in the `protocol` mapping.
+2. The provenance list MUST contain at least one evidence identifier.
+3. Every referenced evidence identifier MUST exist.
+4. The evidence record's `relation` MUST exactly equal the provenance path.
 
 ## 8. Artifacts
 
@@ -452,6 +450,11 @@ It MAY also contain:
 
     language:
     transcription:
+    witness:
+    locator:
+    derived_from:
+    transformations:
+    evidence:
 
 Example:
 
@@ -478,11 +481,11 @@ Example:
 
 - Artifact identifiers MUST be unique within a chapter.
 - Every declared artifact path MUST exist as a file when the chapter is loaded.
-- Artifact paths SHOULD remain within the chapter package.
+- Artifact paths MUST remain within the chapter package.
 - Artifact files SHOULD be UTF-8 text.
 - Artifact files used for exact verification SHOULD contain only the intended comparison text, with no explanatory headings or notes.
 
-The current loader does not enforce path containment. Authors MUST NOT use paths that escape the chapter package.
+The loader resolves artifact paths and rejects paths that escape the chapter package. It also validates declared parent artifacts and artifact-level evidence references.
 
 ### 8.2 Source Variants and Normalization
 
@@ -552,7 +555,7 @@ Example:
 
       - id: ch03-decoding-rule
         source: documented_interlinear_and_later_key
-        relation: method.alternating-word-initials.pipeline
+        relation: method.alternating-word-initials.rule
         quotation: take the first letters alternately
         confidence: historically_reconstructed
 
@@ -788,9 +791,10 @@ Example:
 
 Each stage receives the typed output of the preceding stage.
 
-Version 0.9.0 supports five operations:
+Version 0.9.0 supports six operations:
 
     unitize
+    traverse
     select
     project
     concatenate
@@ -819,7 +823,7 @@ The normal data flow is:
     Text
       → unitize
     UnitSequence
-      → select and/or project
+      → traverse, select, and/or project
     UnitSequence
       → concatenate
     EmittedStream
