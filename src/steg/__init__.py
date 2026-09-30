@@ -1,5 +1,5 @@
 from .compiler import CompiledCase, CompiledMethod, compile_case, compile_method
-from .corpus import ArtifactRef, ChapterDefinition, ChapterDefinitionError, CipherCase, EvidenceRef, MethodDefinition, load_chapter, validate_chapter
+from .corpus import ArtifactRef, ChapterDefinition, ChapterDefinitionError, CipherCase, ClaimRef, EvidenceRef, MethodDefinition, load_chapter, validate_chapter
 from .loader import DefinitionError, load_pipeline, pipeline_from_dict
 from .models import EmittedStream, ExecutionResult, ProjectionDecision, SelectionDecision, SourceSpan, Text, TraceEvent, UnitSequence
 from .modes import CompiledMode, HistoricalMode, compile_historical_mode, generate_simple_block_space
