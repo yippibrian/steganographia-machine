@@ -163,7 +163,7 @@ Evidence may support:
 
 ### 4.4 Method
 
-A method is a reusable pipeline. It contains no fixed input or expected output.
+A method is a reusable transformation. It contains no fixed input or expected output and is defined either by a direct pipeline or by a historical mode that compiles to a pipeline.
 
 Examples include:
 
@@ -181,7 +181,8 @@ A case applies one method to one input artifact. It may also identify:
 - a separately formatted reading;
 - evidence;
 - notes;
-- a status.
+- a status;
+- case-specific `execution` parameters required by an explicitly stateful historical rule.
 
 A case is the unit executed by `run_chapter.py`.
 
@@ -590,7 +591,11 @@ A method file MUST contain:
 
     id:
     title:
+
+It MUST contain exactly one of:
+
     pipeline:
+    mode:
 
 It MAY contain:
 
@@ -615,10 +620,11 @@ Example:
 ### 10.2 Method Validation
 
 - Method identifiers MUST be unique within a chapter.
-- `pipeline` MUST be a list.
-- The pipeline MUST be non-empty when compiled.
+- A method MUST define exactly one of `pipeline` or `mode`.
+- A direct `pipeline` MUST be a list and MUST be non-empty when compiled.
+- A historical `mode` MUST be a mapping accepted by the historical mode compiler.
 - Every evidence identifier named by a method MUST exist.
-- Every stage and option MUST be accepted by the pipeline loader.
+- Every compiled stage and option MUST be accepted by the pipeline loader.
 
 ### 10.3 Method Design Rules
 
