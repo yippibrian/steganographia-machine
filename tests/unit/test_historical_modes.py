@@ -2,6 +2,7 @@ import pytest
 
 from steg import (
     AlternatingBlockSchedule,
+    BoundaryResetSchedule,
     DefinitionError,
     SelectStage,
     Text,
@@ -107,7 +108,7 @@ def test_boundary_deviations_are_not_silently_approximated():
         )
 
 
-def test_simple_block_space_has_two_orders_five_by_six():
+def test_simple_block_space_has_two_orders_five_idle_columns_by_six_significant_rows():
     space = generate_simple_block_space()
     coordinates = {
         (
@@ -119,3 +120,50 @@ def test_simple_block_space_has_two_orders_five_by_six():
     }
     assert len(space) == 60
     assert len(coordinates) == 60
+    assert {mode.parameters["idle_run"] for mode in space} == {1, 2, 3, 4, 5}
+    assert {mode.parameters["significant_run"] for mode in space} == {1, 2, 3, 4, 5, 6}
+
+
+def test_generated_table_preserves_known_selenus_coordinates():
+    space = {
+        (
+            mode.parameters["starts_with"],
+            mode.parameters["idle_run"],
+            mode.parameters["significant_run"],
+        ): mode
+        for mode in generate_simple_block_space()
+    }
+    assert space[("idle", 1, 2)].historical_notation == "o.."
+    assert space[("idle", 2, 2)].historical_notation == "oo.."
+    assert space[("idle", 5, 5)].historical_notation == "ooooo....."
+    assert space[("significant", 1, 1)].historical_notation == ".o"
+
+
+def test_historical_notation_must_match_semantic_parameters():
+    with pytest.raises(DefinitionError, match="does not match semantic parameters"):
+        compile_historical_mode(
+            {
+                "name": "Bad-Aseliel",
+                "family": "block_word_initials",
+                "historical_notation": "oo.",
+                "parameters": {
+                    "idle_run": 1,
+                    "significant_run": 2,
+                    "starts_with": "idle",
+                },
+            }
+        )
+
+
+def test_explicit_boundaries_can_reset_a_block_schedule_without_plaintext_inference():
+    schedule = BoundaryResetSchedule(
+        idle_run=1,
+        significant_run=2,
+        boundary_after_selected=(1,),
+        starts_with="idle",
+    )
+    decisions = [schedule.decision(i) for i in range(6)]
+    assert [d.classification for d in decisions] == [
+        "idle", "significant", "idle", "significant", "significant", "idle"
+    ]
+    assert decisions[1].state["boundary_fired"] is True
