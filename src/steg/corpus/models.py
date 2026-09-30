@@ -60,6 +60,7 @@ class CipherCase:
     status: str
     evidence: tuple[str, ...]
     notes: tuple[str, ...]
+    execution: Mapping[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
