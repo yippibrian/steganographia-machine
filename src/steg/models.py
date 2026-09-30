@@ -25,7 +25,7 @@ class SourceSpan:
 class UnitSequence:
     units: tuple[str, ...]
     unit_type: str
-    spans: tuple[SourceSpan, ...] = ()
+    spans: tuple[SourceSpan | None, ...] = ()
 
     def __post_init__(self) -> None:
         if self.spans and len(self.spans) != len(self.units):
@@ -35,6 +35,11 @@ class UnitSequence:
 @dataclass(frozen=True)
 class EmittedStream:
     value: str
+    spans: tuple[SourceSpan | None, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.spans and len(self.spans) != len(self.value):
+            raise ValueError("emitted spans must be empty or aligned to characters")
 
 
 PipelineValue = Union[Text, UnitSequence, EmittedStream]
