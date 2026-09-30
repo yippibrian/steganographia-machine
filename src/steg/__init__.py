@@ -1,3 +1,4 @@
+from .encoding import CarrierConstraint, CarrierValidation, EncodingPlan, plan_encoding, validate_carrier
 from .compiler import CompiledCase, CompiledMethod, compile_case, compile_method
 from .corpus import ArtifactRef, ChapterDefinition, ChapterDefinitionError, CipherCase, ClaimRef, EvidenceRef, MethodDefinition, ModeRegistry, ModeRegistryEntry, load_chapter, load_mode_registry, validate_chapter
 from .loader import DefinitionError, load_pipeline, pipeline_from_dict
