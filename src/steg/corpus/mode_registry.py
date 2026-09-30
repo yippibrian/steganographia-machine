@@ -9,6 +9,7 @@ import yaml
 
 @dataclass(frozen=True)
 class ModeRegistryEntry:
+    id: str
     name: str
     chapter: int
     mode: int
@@ -23,6 +24,10 @@ class ModeRegistry:
     expected_catalogue_size: int
     source: str
     entries: dict[str, ModeRegistryEntry]
+
+    def named(self, name: str) -> tuple[ModeRegistryEntry, ...]:
+        """Return all catalogue entries with a historical name."""
+        return tuple(entry for entry in self.entries.values() if entry.name == name)
 
 
 ALLOWED_IMPLEMENTATION_STATUSES = {
@@ -47,6 +52,7 @@ def load_mode_registry(path: str | Path) -> ModeRegistry:
     entries: dict[str, ModeRegistryEntry] = {}
     for item in data.get("modes", []):
         entry = ModeRegistryEntry(
+            id=item["id"],
             name=item["name"],
             chapter=int(item["chapter"]),
             mode=int(item["mode"]),
@@ -55,8 +61,14 @@ def load_mode_registry(path: str | Path) -> ModeRegistry:
             implementation_status=item.get("implementation_status", "unclassified"),
             notes=tuple(item.get("notes", [])),
         )
-        if entry.name in entries:
-            raise ValueError(f"duplicate mode registry name: {entry.name}")
+        if not isinstance(entry.id, str) or not entry.id:
+            raise ValueError("mode registry id must be a non-empty string")
+        if entry.id in entries:
+            raise ValueError(f"duplicate mode registry id: {entry.id}")
+        if entry.chapter < 1 or entry.mode < 1:
+            raise ValueError(
+                f"mode {entry.id}: chapter and mode must be positive integers"
+            )
         if entry.implementation_status not in ALLOWED_IMPLEMENTATION_STATUSES:
             raise ValueError(
                 f"mode {entry.name}: unknown implementation status "
@@ -68,5 +80,5 @@ def load_mode_registry(path: str | Path) -> ModeRegistry:
             raise ValueError(
                 f"mode {entry.name}: historical_notation must contain only o and ."
             )
-        entries[entry.name] = entry
+        entries[entry.id] = entry
     return ModeRegistry(expected, source, entries)
