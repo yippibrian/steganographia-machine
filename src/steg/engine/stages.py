@@ -182,36 +182,41 @@ class ProjectStage:
         if not isinstance(value, UnitSequence):
             raise TypeError("ProjectStage requires UnitSequence input")
         if self.part == "initial":
-            pairs = tuple((unit, unit[0]) for unit in value.units if unit)
+            projections = tuple(
+                (index, unit, unit[0])
+                for index, unit in enumerate(value.units)
+                if unit
+            )
             output_type = "character"
         elif self.part == "final":
-            pairs = tuple((unit, unit[-1]) for unit in value.units if unit)
+            projections = tuple(
+                (index, unit, unit[-1])
+                for index, unit in enumerate(value.units)
+                if unit
+            )
             output_type = "character"
         elif self.part == "whole":
-            pairs = tuple((unit, unit) for unit in value.units)
+            projections = tuple(
+                (index, unit, unit)
+                for index, unit in enumerate(value.units)
+            )
             output_type = value.unit_type
         else:
             raise ValueError(f"unsupported projection part: {self.part}")
-        projected = tuple(result for _, result in pairs)
-        # Empty units are skipped by initial/final projection. Line unitization can
-        # create empty units, so align spans by walking the original units.
-        source_indices = tuple(
-            i for i, unit in enumerate(value.units)
-            if self.part == "whole" or bool(unit)
-        )
+        projected = tuple(result for _, _, result in projections)
         projected_spans = (
-            tuple(value.spans[i] for i in source_indices)
+            tuple(value.spans[index] for index, _, _ in projections)
             if value.spans
             else ()
         )
         decisions = tuple(
             ProjectionDecision(
-                i,
+                source_index,
                 unit,
                 result,
-                projected_spans[i] if projected_spans else None,
+                projected_spans[output_index] if projected_spans else None,
             )
-            for i, (unit, result) in enumerate(pairs)
+            for output_index, (source_index, unit, result) in enumerate(projections)
         )
         output = UnitSequence(projected, output_type, projected_spans)
         return output, TraceEvent(
