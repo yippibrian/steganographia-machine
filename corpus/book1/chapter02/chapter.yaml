@@ -1,0 +1,187 @@
+id: book1.chapter02
+book: 1
+chapter: 2
+title: Padiel — The Second Operator
+principal: Padiel
+protocol:
+  address:
+    coordinate_system: compass_mansion
+    direction: subsolanus
+    mansion_index: 2
+    spatial_requirement: required
+  authority:
+    principal: Padiel
+    ministers:
+      diurnal: 10000
+      nocturnal: 200000
+  sign:
+    required_on_carrier: true
+    identifier_role: inherited_from_chapter01
+    artifact: null
+  availability:
+    day: supported
+    night: supported
+    repetition: until_presence
+  message_domain:
+  - general_secret_intention
+  - correction_of_malefactors
+  - incarceration
+  - punishment
+  sender:
+    invocation_artifact: sender-conjuration
+    orientation: subsolanus
+  recipient:
+    invocation_artifact: receiver-conjuration
+    orientation: subsolanus
+  carrier:
+    required: true
+    semantics: arbitrary_innocent_narrative
+    language_constraint: none
+provenance:
+  protocol.address.direction:
+  - ch02-direction
+  protocol.authority.principal:
+  - ch02-authority
+  protocol.sign.required_on_carrier:
+  - ch02-sign
+  protocol.sender.invocation_artifact:
+  - ch02-sender
+  protocol.recipient.invocation_artifact:
+  - ch02-recipient
+  protocol.carrier.semantics:
+  - ch02-carrier
+artifacts:
+- id: sender-conjuration
+  role: sender_invocation
+  path: sources/sender-conjuration.txt
+  language: artificial
+  transcription: diplomatic
+- id: receiver-conjuration
+  role: recipient_invocation
+  path: sources/receiver-conjuration.txt
+  language: artificial
+  transcription: diplomatic
+- id: carrier-prayer-one-1608
+  role: public_carrier
+  path: sources/carrier-prayer-one-latin-1608.txt
+  language: latin
+  transcription: diplomatic
+- id: carrier-prayer-two-1500
+  role: alternate_public_carrier
+  path: sources/carrier-prayer-two-latin-1500.txt
+  language: latin
+  transcription: diplomatic
+- id: intention-example
+  role: stated_intention
+  path: sources/intention-example-latin.txt
+  language: latin
+  transcription: diplomatic
+- id: sender-conjuration-website-normalized
+  role: website_interlinear_normalized_input
+  path: sources/sender-conjuration-website-normalized.txt
+  language: artificial
+  transcription: website_interlinear_normalized
+- id: receiver-conjuration-website-normalized
+  role: website_interlinear_normalized_input
+  path: sources/receiver-conjuration-website-normalized.txt
+  language: artificial
+  transcription: website_interlinear_normalized
+- id: carrier-prayer-one-website-normalized
+  role: website_interlinear_normalized_input
+  path: sources/carrier-prayer-one-website-normalized.txt
+  language: latin
+  transcription: website_interlinear_normalized
+- id: carrier-prayer-two-website-normalized
+  role: website_interlinear_normalized_input
+  path: sources/carrier-prayer-two-website-normalized.txt
+  language: latin
+  transcription: website_interlinear_normalized
+- id: ch02-sender-expected-compact
+  role: expected_compact_extraction
+  path: sources/ch02-sender-expected-compact.txt
+  language: latin_or_german
+  transcription: website_documented
+- id: ch02-sender-website-reading
+  role: website_display_reading
+  path: sources/ch02-sender-website-reading.txt
+  language: latin_or_german
+  transcription: website_documented
+- id: ch02-receiver-expected-compact
+  role: expected_compact_extraction
+  path: sources/ch02-receiver-expected-compact.txt
+  language: latin_or_german
+  transcription: website_documented
+- id: ch02-receiver-website-reading
+  role: website_display_reading
+  path: sources/ch02-receiver-website-reading.txt
+  language: latin_or_german
+  transcription: website_documented
+- id: ch02-prayer1-expected-compact
+  role: expected_compact_extraction
+  path: sources/ch02-prayer1-expected-compact.txt
+  language: latin_or_german
+  transcription: website_documented
+- id: ch02-prayer1-website-reading
+  role: website_display_reading
+  path: sources/ch02-prayer1-website-reading.txt
+  language: latin_or_german
+  transcription: website_documented
+- id: ch02-prayer2-expected-compact
+  role: expected_compact_extraction
+  path: sources/ch02-prayer2-expected-compact.txt
+  language: latin_or_german
+  transcription: website_documented
+- id: ch02-prayer2-website-reading
+  role: website_display_reading
+  path: sources/ch02-prayer2-website-reading.txt
+  language: latin_or_german
+  transcription: website_documented
+evidence:
+- id: ch02-direction
+  source: chapter_prose
+  relation: protocol.address.direction
+  quotation: Padiel ... Subsolanus
+  confidence: explicit
+- id: ch02-authority
+  source: chapter_heading
+  relation: protocol.authority.principal
+  quotation: prince Padiel
+  confidence: explicit
+- id: ch02-sign
+  source: inherited_protocol
+  relation: protocol.sign.required_on_carrier
+  quotation: prepared beforehand in the proper manner
+  confidence: inherited
+- id: ch02-sender
+  source: chapter_prose
+  relation: protocol.sender.invocation_artifact
+  quotation: speak this conjuration
+  confidence: explicit
+- id: ch02-recipient
+  source: chapter_prose
+  relation: protocol.recipient.invocation_artifact
+  quotation: speak this conjuration silently
+  confidence: explicit
+- id: ch02-carrier
+  source: chapter_prose
+  relation: protocol.carrier.semantics
+  quotation: whatever narration you wish
+  confidence: explicit
+- id: ch02-alternating-initial-rule
+  source: reconstructed_key
+  relation: method.padiel-alternating-word-initials.pipeline
+  quotation: take the first letters alternately
+  confidence: historically_reported
+- id: ch02-conjuration-decoding-rule
+  source: trithemius_redivivus_interlinear
+  relation: method.alternating-words-then-characters.pipeline
+  quotation: Interlinear decoding of the Padiel sender and receiver conjurations
+  confidence: documented_but_garbled
+methods:
+- methods/alternating-words-then-characters.yaml
+- methods/padiel-alternating-word-initials.yaml
+cases:
+- cases/sender-conjuration-instruction.yaml
+- cases/receiver-conjuration-instruction.yaml
+- cases/first-prayer.yaml
+- cases/second-prayer.yaml

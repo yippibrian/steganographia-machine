@@ -1,0 +1,11 @@
+id: chapter-ii-second-prayer
+title: Chapter II second prayer
+method: padiel-alternating-word-initials
+input_artifact: carrier-prayer-two-website-normalized
+expected_artifact: ch02-prayer2-expected-compact
+reading_artifact: ch02-prayer2-website-reading
+status: verified
+evidence: [ch02-alternating-initial-rule]
+notes:
+  - Reproduces the interlinear extraction documented at trithemius.com/steganographia-english/.
+  - The normalized input is an explicit test fixture for that documented reading; diplomatic source text is retained separately.

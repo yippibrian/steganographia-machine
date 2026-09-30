@@ -1,0 +1,14 @@
+id: pamersiel-conjuration-decoder
+title: Decode the concealed Pamersiel operator stream
+evidence: [ch01-conjuration-decoding-rule]
+notes:
+  - The selection mask is independent of the unit map.
+  - It first operates over words and then over characters.
+pipeline:
+  - unitize: {unit: word}
+  - select: {schedule: {type: mask, values: "01", phase: 0}}
+  - concatenate: {}
+  - unitize: {unit: character, include_whitespace: false}
+  - select: {schedule: {type: mask, values: "01", phase: 0}}
+  - concatenate: {}
+  - normalize: {lowercase: true, remove_whitespace: true}

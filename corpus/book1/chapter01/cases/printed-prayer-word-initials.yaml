@@ -1,0 +1,13 @@
+id: printed-prayer-word-initials
+title: Apply the recovered word-initial rule to the 1608 prayer
+method: pamersiel-word-initials
+input_artifact: carrier-1608
+expected_artifact: null
+status: unverified
+evidence:
+- ch01-word-initial-rule
+- ch01-carrier
+notes:
+- The separately stated German military order is not assumed to be the plaintext of
+  this exact prayer.
+reading_artifact: null

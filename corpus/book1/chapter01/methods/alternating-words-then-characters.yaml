@@ -1,0 +1,13 @@
+id: alternating-words-then-characters
+title: Take alternating words, then alternating characters
+evidence: [ch01-conjuration-decoding-rule]
+notes:
+  - Used for the interlinear conjuration decodings documented by Trithemius Redivivus.
+pipeline:
+  - unitize: {unit: word}
+  - select: {schedule: {type: mask, values: "01", phase: 0}}
+  - concatenate: {}
+  - unitize: {unit: character, include_whitespace: false}
+  - select: {schedule: {type: mask, values: "01", phase: 0}}
+  - concatenate: {}
+  - normalize: {lowercase: true, remove_whitespace: true}

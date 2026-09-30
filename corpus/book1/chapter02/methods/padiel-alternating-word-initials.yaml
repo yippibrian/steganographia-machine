@@ -1,0 +1,11 @@
+id: padiel-alternating-word-initials
+title: Take the first letters of alternating words
+evidence: [ch02-alternating-initial-rule]
+notes:
+  - The phase remains explicit so each historical example can be tested independently.
+pipeline:
+  - unitize: {unit: word}
+  - select: {schedule: {type: mask, values: "10", phase: 0}}
+  - project: {part: initial}
+  - concatenate: {}
+  - normalize: {lowercase: true, remove_whitespace: true}

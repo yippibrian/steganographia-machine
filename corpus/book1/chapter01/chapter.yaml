@@ -1,0 +1,166 @@
+id: book1.chapter01
+book: 1
+chapter: 1
+title: Pamersiel — The First Operator
+principal: Pamersiel
+protocol:
+  address:
+    coordinate_system: compass
+    direction: east
+    mansion_index: 1
+    spatial_requirement: required
+  authority:
+    principal: Pamersiel
+    associates:
+    - Anoyr
+    - Madriel
+    ministers:
+    - Ebrasothean
+    - Abrulges
+    - Itrasbiel
+    - Nadres
+    - Ormenu
+    - Itules
+    - Rablion
+    - Hamorphiel
+  sign:
+    required_on_carrier: true
+    identifier_role: selects_matching_method
+    artifact: null
+  availability:
+    day: unspecified
+    night: unspecified
+    repetition: until_presence_or_abort
+  message_domain:
+  - general_secret_intention
+  - military_orders
+  sender:
+    invocation_artifact: sender-conjuration
+    orientation: east
+    secret_supplied: orally_after_carrier_written
+  recipient:
+    invocation_artifact: receiver-conjuration
+    orientation: east
+    recognizes_sign: true
+  carrier:
+    required: true
+    semantics: innocent_and_publicly_readable
+    language_constraint: none
+provenance:
+  protocol.address.direction:
+  - ch01-direction
+  protocol.authority.principal:
+  - ch01-authority
+  protocol.sign.required_on_carrier:
+  - ch01-sign
+  protocol.sender.invocation_artifact:
+  - ch01-sender-invocation
+  protocol.recipient.invocation_artifact:
+  - ch01-recipient-invocation
+  protocol.carrier.semantics:
+  - ch01-carrier
+artifacts:
+- id: sender-conjuration
+  role: sender_invocation
+  path: sources/sender-conjuration.txt
+  language: artificial
+  transcription: diplomatic
+- id: receiver-conjuration
+  role: recipient_invocation
+  path: sources/receiver-conjuration.txt
+  language: artificial
+  transcription: diplomatic
+- id: carrier-1608
+  role: public_carrier
+  path: sources/carrier-prayer-latin-1608.txt
+  language: latin
+  transcription: diplomatic
+- id: stated-secret
+  role: separately_stated_secret
+  path: sources/stated-secret-german.txt
+  language: early_new_high_german
+  transcription: diplomatic
+- id: pamersiel-operator-extraction
+  role: historical_extracted_stream
+  path: sources/pamersiel-operator-extraction.txt
+  language: encoded
+  transcription: mechanical_extraction
+- id: sender-conjuration-website-normalized
+  role: website_interlinear_normalized_input
+  path: sources/sender-conjuration-website-normalized.txt
+  language: artificial
+  transcription: website_interlinear_normalized
+- id: receiver-conjuration-website-normalized
+  role: website_interlinear_normalized_input
+  path: sources/receiver-conjuration-website-normalized.txt
+  language: artificial
+  transcription: website_interlinear_normalized
+- id: ch01-sender-expected-compact
+  role: expected_compact_extraction
+  path: sources/ch01-sender-expected-compact.txt
+  language: latin_or_german
+  transcription: website_documented
+- id: ch01-sender-website-reading
+  role: website_display_reading
+  path: sources/ch01-sender-website-reading.txt
+  language: latin_or_german
+  transcription: website_documented
+- id: ch01-receiver-expected-compact
+  role: expected_compact_extraction
+  path: sources/ch01-receiver-expected-compact.txt
+  language: latin_or_german
+  transcription: website_documented
+- id: ch01-receiver-website-reading
+  role: website_display_reading
+  path: sources/ch01-receiver-website-reading.txt
+  language: latin_or_german
+  transcription: website_documented
+evidence:
+- id: ch01-direction
+  source: chapter_prose
+  relation: protocol.address.direction
+  quotation: face toward the East
+  confidence: explicit
+- id: ch01-authority
+  source: chapter_heading
+  relation: protocol.authority.principal
+  quotation: The key and operation are held by Pamersiel
+  confidence: explicit
+- id: ch01-sign
+  source: chapter_prose
+  relation: protocol.sign.required_on_carrier
+  quotation: affix the proper sign
+  confidence: explicit
+- id: ch01-sender-invocation
+  source: chapter_prose
+  relation: protocol.sender.invocation_artifact
+  quotation: compel the spirits in this manner
+  confidence: explicit
+- id: ch01-recipient-invocation
+  source: chapter_prose
+  relation: protocol.recipient.invocation_artifact
+  quotation: let him say this conjuration
+  confidence: explicit
+- id: ch01-carrier
+  source: chapter_prose
+  relation: protocol.carrier.semantics
+  quotation: a simple and open narrative
+  confidence: explicit
+- id: ch01-conjuration-decoding-rule
+  source: reconstructed_key_and_selenus
+  relation: method.pamersiel-conjuration-decoder.pipeline
+  quotation: Retain alternating words beginning with the second word, concatenate
+    them, and retain alternating letters beginning with the second letter.
+  confidence: historically_reconstructed
+- id: ch01-word-initial-rule
+  source: reconstructed_key_and_selenus
+  relation: method.pamersiel-word-initials.pipeline
+  quotation: nym die ersten bugstaben de omni uerbo
+  confidence: historically_reported
+methods:
+- methods/alternating-words-then-characters.yaml
+- methods/pamersiel-word-initials.yaml
+cases:
+- cases/sender-conjuration-instruction.yaml
+- cases/receiver-conjuration-instruction.yaml
+- cases/printed-prayer-word-initials.yaml

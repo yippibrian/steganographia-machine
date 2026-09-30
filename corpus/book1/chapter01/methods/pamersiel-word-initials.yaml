@@ -1,0 +1,10 @@
+id: pamersiel-word-initials
+title: Extract the initial from every word
+evidence: [ch01-word-initial-rule]
+notes:
+  - The recovered instruction explicitly names words as the units.
+pipeline:
+  - unitize: {unit: word}
+  - project: {part: initial}
+  - concatenate: {}
+  - normalize: {lowercase: true, remove_whitespace: true}

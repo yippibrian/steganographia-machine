@@ -1,0 +1,11 @@
+id: chapter-ii-sender-conjuration
+title: Chapter II sender conjuration
+method: alternating-words-then-characters
+input_artifact: sender-conjuration-website-normalized
+expected_artifact: ch02-sender-expected-compact
+reading_artifact: ch02-sender-website-reading
+status: verified
+evidence: [ch02-conjuration-decoding-rule]
+notes:
+  - Reproduces the interlinear extraction documented at trithemius.com/steganographia-english/.
+  - The normalized input is an explicit test fixture for that documented reading; diplomatic source text is retained separately.
