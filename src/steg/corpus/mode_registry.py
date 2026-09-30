@@ -11,8 +11,8 @@ import yaml
 class ModeRegistryEntry:
     id: str
     name: str
-    chapter: int
-    mode: int
+    source_chapter: int
+    source_mode: int
     family: str | None
     historical_notation: str | None
     implementation_status: str
@@ -54,8 +54,8 @@ def load_mode_registry(path: str | Path) -> ModeRegistry:
         entry = ModeRegistryEntry(
             id=item["id"],
             name=item["name"],
-            chapter=int(item["chapter"]),
-            mode=int(item["mode"]),
+            source_chapter=int(item["source_chapter"]),
+            source_mode=int(item["source_mode"]),
             family=item.get("family"),
             historical_notation=item.get("historical_notation"),
             implementation_status=item.get("implementation_status", "unclassified"),
@@ -65,9 +65,9 @@ def load_mode_registry(path: str | Path) -> ModeRegistry:
             raise ValueError("mode registry id must be a non-empty string")
         if entry.id in entries:
             raise ValueError(f"duplicate mode registry id: {entry.id}")
-        if entry.chapter < 1 or entry.mode < 1:
+        if entry.source_chapter < 1 or entry.source_mode < 1:
             raise ValueError(
-                f"mode {entry.id}: chapter and mode must be positive integers"
+                f"mode {entry.id}: source_chapter and source_mode must be positive integers"
             )
         if entry.implementation_status not in ALLOWED_IMPLEMENTATION_STATUSES:
             raise ValueError(
