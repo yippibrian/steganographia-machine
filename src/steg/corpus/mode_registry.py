@@ -24,6 +24,7 @@ class ModeRegistry:
     expected_catalogue_size: int
     source: str
     entries: dict[str, ModeRegistryEntry]
+    notes: tuple[str, ...] = ()
 
     def named(self, name: str) -> tuple[ModeRegistryEntry, ...]:
         """Return all catalogue entries with a historical name."""
@@ -49,8 +50,18 @@ def load_mode_registry(path: str | Path) -> ModeRegistry:
     source = data.get("source")
     if not isinstance(source, str) or not source:
         raise ValueError("mode registry source must be a non-empty string")
+    raw_notes = data.get("notes", [])
+    if not isinstance(raw_notes, list) or not all(
+        isinstance(note, str) for note in raw_notes
+    ):
+        raise ValueError("mode registry notes must be a list of strings")
+    raw_modes = data.get("modes", [])
+    if not isinstance(raw_modes, list):
+        raise ValueError("mode registry modes must be a list")
     entries: dict[str, ModeRegistryEntry] = {}
-    for item in data.get("modes", []):
+    for item in raw_modes:
+        if not isinstance(item, dict):
+            raise ValueError("each mode registry entry must be a mapping")
         entry = ModeRegistryEntry(
             id=item["id"],
             name=item["name"],
@@ -81,4 +92,4 @@ def load_mode_registry(path: str | Path) -> ModeRegistry:
                 f"mode {entry.name}: historical_notation must contain only o and ."
             )
         entries[entry.id] = entry
-    return ModeRegistry(expected, source, entries)
+    return ModeRegistry(expected, source, entries, tuple(raw_notes))
