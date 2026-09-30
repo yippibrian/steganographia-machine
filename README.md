@@ -50,3 +50,16 @@ The corpus now preserves more than decoded strings. Units can retain source coor
 A partial 67-mode catalogue lives in `corpus/mode_registry.yaml`. It is deliberately incomplete where the available transcription is uncertain.
 
 The design rule is that expected plaintext is verification data, never hidden decoder input.
+
+
+### Internal architecture
+
+The implementation is split by dependency direction rather than by historical chapter:
+
+- `steg.text` — source coordinates and canonical tokenization
+- `steg.engine` — generic execution kernel
+- `steg.historical` — historical mode semantics and construction constraints
+- `steg.corpus` — documentary evidence and corpus records
+- `steg.compiler` — binds corpus cases to executable methods
+
+A static test prevents lower-level subsystems from importing higher-level ones. The top-level `steg` module remains the stable convenience API.
