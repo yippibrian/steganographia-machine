@@ -47,7 +47,14 @@ def compile_method(
     return CompiledMethod(chapter, method, compiled_mode.pipeline, compiled_mode)
 
 
-def compile_case(chapter: ChapterDefinition, case_id: str, *, method_id: str | None = None, input_artifact_id: str | None = None) -> CompiledCase:
+def compile_case(
+    chapter: ChapterDefinition,
+    case_id: str,
+    *,
+    method_id: str | None = None,
+    input_artifact_id: str | None = None,
+    execution_parameters: dict | None = None,
+) -> CompiledCase:
     try:
         case = chapter.cases[case_id]
     except KeyError as exc:
@@ -57,13 +64,19 @@ def compile_case(chapter: ChapterDefinition, case_id: str, *, method_id: str | N
     if chosen_input not in chapter.artifacts:
         raise KeyError(f"unknown artifact {chosen_input!r}; available: {', '.join(sorted(chapter.artifacts))}")
     configured = chosen_method == case.method_id and chosen_input == case.input_artifact
+    if execution_parameters is None:
+        # Case execution evidence is valid only for the method+artifact pair it
+        # was recorded with. Overrides must supply replacement parameters.
+        bound_execution = dict(case.execution) if configured else {}
+    else:
+        bound_execution = dict(execution_parameters)
     return CompiledCase(
         chapter,
         case,
         compile_method(
             chapter,
             chosen_method,
-            execution_parameters=dict(case.execution),
+            execution_parameters=bound_execution,
         ),
         chosen_input,
         configured,
