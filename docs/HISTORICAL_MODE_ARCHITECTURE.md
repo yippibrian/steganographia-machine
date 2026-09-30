@@ -2,6 +2,43 @@
 
 The linear pipeline remains the execution kernel. Historical descriptions compile into it, while evidence and uncertainty remain outside the kernel.
 
+## Physical package boundaries
+
+The Python package mirrors the conceptual dependency graph:
+
+    steg/
+    ├── text/        source geometry and canonical tokenization
+    ├── engine/      generic pipeline, stages, schedules, and pipeline specs
+    ├── historical/  historical mode descriptions, compilation, and encoding constraints
+    ├── corpus/      documentary records, evidence, claims, artifacts, and catalogue data
+    ├── compiler/    composition boundary that binds corpus cases to executable methods
+    ├── errors.py    shared definition errors
+    ├── trace.py
+    ├── verifier.py
+    └── cli.py
+
+The intended dependency direction is:
+
+    text
+      ↑
+    engine
+      ↑
+    historical
+      ↑
+    compiler / application
+
+Corpus records are documentary data. Corpus validation may ask the engine and historical compiler whether executable definitions are structurally valid, but the engine and historical layers MUST NOT depend on corpus or compiler code.
+
+The package-boundary test enforces the most important negative dependencies:
+
+- `text` does not import engine, historical, corpus, or compiler;
+- `engine` does not import historical, corpus, or compiler;
+- `historical` does not import corpus or compiler.
+
+The top-level `steg` package re-exports the supported public API so callers do not need to depend on internal file locations.
+
+Canonical word tokenization lives in `steg.text.tokenization`; decoding and carrier validation use the same definition.
+
 ## Layers
 
 1. **Artifacts** preserve documentary witnesses and derivation metadata.
