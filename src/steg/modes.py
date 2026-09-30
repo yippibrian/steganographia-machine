@@ -14,6 +14,8 @@ class HistoricalMode:
     parameters: Mapping[str, Any]
     modifiers: tuple[Mapping[str, Any], ...] = ()
     normalization: Mapping[str, Any] | None = None
+    historical_notation: str | None = None
+    traversal: str = "forward"
 
 
 @dataclass(frozen=True)
@@ -29,6 +31,8 @@ def compile_historical_mode(spec: Mapping[str, Any]) -> CompiledMode:
     parameters = spec.get("parameters", {})
     modifiers = tuple(spec.get("modifiers", []))
     normalization = spec.get("normalization")
+    historical_notation = spec.get("historical_notation")
+    traversal = spec.get("traversal", "forward")
 
     if not isinstance(name, str) or not name:
         raise DefinitionError("historical mode requires a non-empty name")
@@ -40,8 +44,19 @@ def compile_historical_mode(spec: Mapping[str, Any]) -> CompiledMode:
         raise DefinitionError("historical mode modifiers must be mappings")
     if normalization is not None and not isinstance(normalization, dict):
         raise DefinitionError("historical mode normalization must be a mapping")
+    if historical_notation is not None and (
+        not isinstance(historical_notation, str)
+        or not historical_notation
+        or any(symbol not in {"o", "."} for symbol in historical_notation)
+    ):
+        raise DefinitionError("historical_notation must contain only 'o' and '.'")
+    if traversal not in {"forward", "reverse"}:
+        raise DefinitionError("historical mode traversal must be 'forward' or 'reverse'")
 
-    mode = HistoricalMode(name, family, parameters, modifiers, normalization)
+    mode = HistoricalMode(
+        name, family, parameters, modifiers, normalization,
+        historical_notation, traversal,
+    )
 
     # Keep historically described deviations visible instead of silently
     # approximating them with a fixed mask. Stateful execution comes next.
@@ -51,6 +66,13 @@ def compile_historical_mode(spec: Mapping[str, Any]) -> CompiledMode:
         )
 
     compiled_pipeline = _compile_family(mode)
+    if mode.traversal == "reverse":
+        compiled_pipeline = (
+            compiled_pipeline[0],
+            {"traverse": {"direction": "reverse"}},
+            *compiled_pipeline[1:],
+        )
+    _validate_historical_notation(mode)
     if mode.normalization:
         compiled_pipeline += ({"normalize": dict(mode.normalization)},)
 
@@ -92,6 +114,24 @@ def _compile_family(mode: HistoricalMode) -> tuple[Mapping[str, Any], ...]:
     raise DefinitionError(f"mode {mode.name}: unsupported historical family {mode.family!r}")
 
 
+def _validate_historical_notation(mode: HistoricalMode) -> None:
+    if mode.historical_notation is None or mode.family != "block_word_initials":
+        return
+    idle_run = mode.parameters.get("idle_run")
+    significant_run = mode.parameters.get("significant_run")
+    starts_with = mode.parameters.get("starts_with", "idle")
+    expected = (
+        ("o" * idle_run + "." * significant_run)
+        if starts_with == "idle"
+        else ("." * significant_run + "o" * idle_run)
+    )
+    if mode.historical_notation != expected:
+        raise DefinitionError(
+            f"mode {mode.name}: historical_notation {mode.historical_notation!r} "
+            f"does not match semantic parameters (expected {expected!r})"
+        )
+
+
 def _only(parameters: Mapping[str, Any], allowed: set[str], name: str) -> None:
     unknown = set(parameters) - allowed
     if unknown:
@@ -99,15 +139,21 @@ def _only(parameters: Mapping[str, Any], allowed: set[str], name: str) -> None:
 
 
 def generate_simple_block_space() -> tuple[HistoricalMode, ...]:
-    """Generate the 60 structural cells in the two-order, five-by-six table.
+    """Generate Selenus's two orders of thirty simple block configurations.
 
-    The generator deliberately does not assign historical spirit names to cells.
-    Names belong in evidenced corpus records, not in generated structure.
+    In the printed table, o denotes an Idle word and . a Valid (significant)
+    word. The five columns vary idle_run from 1..5, while the six rows vary
+    significant_run from 1..6.
     """
     modes = []
     for starts_with in ("idle", "significant"):
-        for significant_run in range(1, 6):
-            for idle_run in range(1, 7):
+        for idle_run in range(1, 6):
+            for significant_run in range(1, 7):
+                notation = (
+                    "o" * idle_run + "." * significant_run
+                    if starts_with == "idle"
+                    else "." * significant_run + "o" * idle_run
+                )
                 modes.append(
                     HistoricalMode(
                         name=f"generated-{starts_with}-{idle_run}-{significant_run}",
@@ -117,6 +163,7 @@ def generate_simple_block_space() -> tuple[HistoricalMode, ...]:
                             "significant_run": significant_run,
                             "starts_with": starts_with,
                         },
+                        historical_notation=notation,
                     )
                 )
     return tuple(modes)
