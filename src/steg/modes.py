@@ -28,6 +28,8 @@ class CompiledMode:
 def compile_historical_mode(
     spec: Mapping[str, Any],
     execution_parameters: Mapping[str, Any] | None = None,
+    *,
+    allow_unbound_modifiers: bool = False,
 ) -> CompiledMode:
     name = spec.get("name")
     family = spec.get("family")
@@ -67,6 +69,7 @@ def compile_historical_mode(
             mode,
             compiled_pipeline,
             execution_parameters or {},
+            allow_unbound=allow_unbound_modifiers,
         )
     if mode.traversal == "reverse":
         compiled_pipeline = (
@@ -89,6 +92,8 @@ def _apply_modifiers(
     mode: HistoricalMode,
     pipeline: tuple[Mapping[str, Any], ...],
     execution_parameters: Mapping[str, Any],
+    *,
+    allow_unbound: bool = False,
 ) -> tuple[Mapping[str, Any], ...]:
     result = pipeline
     for modifier in mode.modifiers:
@@ -106,6 +111,8 @@ def _apply_modifiers(
         )
         boundaries = execution_parameters.get(parameter_name)
         if boundaries is None:
+            if allow_unbound:
+                continue
             raise DefinitionError(
                 f"mode {mode.name}: boundary-sensitive execution requires "
                 f"case parameter {parameter_name!r}"
