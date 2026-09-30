@@ -62,6 +62,13 @@ def load_mode_registry(path: str | Path) -> ModeRegistry:
     for item in raw_modes:
         if not isinstance(item, dict):
             raise ValueError("each mode registry entry must be a mapping")
+        entry_notes = item.get("notes", [])
+        if not isinstance(entry_notes, list) or not all(
+            isinstance(note, str) for note in entry_notes
+        ):
+            raise ValueError(
+                f"mode {item.get('id', '<unknown>')}: notes must be a list of strings"
+            )
         entry = ModeRegistryEntry(
             id=item["id"],
             name=item["name"],
@@ -70,7 +77,7 @@ def load_mode_registry(path: str | Path) -> ModeRegistry:
             family=item.get("family"),
             historical_notation=item.get("historical_notation"),
             implementation_status=item.get("implementation_status", "unclassified"),
-            notes=tuple(item.get("notes", [])),
+            notes=tuple(entry_notes),
         )
         if not isinstance(entry.id, str) or not entry.id:
             raise ValueError("mode registry id must be a non-empty string")
@@ -84,10 +91,6 @@ def load_mode_registry(path: str | Path) -> ModeRegistry:
             )
         if entry.family is not None and not isinstance(entry.family, str):
             raise ValueError(f"mode {entry.id}: family must be a string or null")
-        if not isinstance(entry.notes, tuple) or not all(
-            isinstance(note, str) for note in entry.notes
-        ):
-            raise ValueError(f"mode {entry.id}: notes must be a list of strings")
         if entry.implementation_status not in ALLOWED_IMPLEMENTATION_STATUSES:
             raise ValueError(
                 f"mode {entry.name}: unknown implementation status "
