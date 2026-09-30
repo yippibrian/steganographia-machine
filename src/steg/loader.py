@@ -4,7 +4,7 @@ from typing import Any
 import yaml
 from .pipeline import Pipeline
 from .schedules import AlternatingBlockSchedule, MaskSchedule
-from .stages import ConcatenateStage, NormalizeStage, ProjectStage, SelectStage, UnitizeCharactersStage, UnitizeWordsStage
+from .stages import ConcatenateStage, NormalizeStage, ProjectStage, SelectStage, TraverseStage, UnitizeCharactersStage, UnitizeLinesStage, UnitizeWordsStage
 
 class DefinitionError(ValueError):
     pass
@@ -45,6 +45,10 @@ def _stage_from_dict(spec: Any, index: int):
             return UnitizeWordsStage()
         if unit == "character":
             return UnitizeCharactersStage(bool(options.get("include_whitespace", False)))
+        if unit == "line":
+            if "include_whitespace" in options:
+                raise DefinitionError(f"pipeline stage {index}: include_whitespace is valid only for character units")
+            return UnitizeLinesStage()
         raise DefinitionError(f"pipeline stage {index}: unsupported unit {unit!r}")
 
     if operation == "select":
@@ -54,10 +58,17 @@ def _stage_from_dict(spec: Any, index: int):
             raise DefinitionError(f"pipeline stage {index}: select requires schedule")
         return SelectStage(_schedule_from_dict(schedule, index))
 
+    if operation == "traverse":
+        _reject_unknown(options, {"direction"}, operation, index)
+        direction = options.get("direction", "forward")
+        if direction not in {"forward", "reverse"}:
+            raise DefinitionError(f"pipeline stage {index}: unsupported traversal {direction!r}")
+        return TraverseStage(direction)
+
     if operation == "project":
         _reject_unknown(options, {"part"}, operation, index)
         part = options.get("part")
-        if part not in {"initial", "whole"}:
+        if part not in {"initial", "final", "whole"}:
             raise DefinitionError(f"pipeline stage {index}: unsupported projection {part!r}")
         return ProjectStage(part)
 
