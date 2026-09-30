@@ -576,6 +576,35 @@ Recommended confidence descriptions include:
 
 A method or case may reference any evidence identifier declared in the chapter.
 
+### 9.1 Claims
+
+A chapter MAY contain a top-level `claims` list for propositions that should remain distinct from executable representation.
+
+Each claim contains:
+
+    id:
+    proposition:
+    status:
+
+It MAY also contain:
+
+    evidence:
+    scope:
+    contradicts:
+    notes:
+
+Supported statuses are:
+
+    documented
+    reconstructed
+    hypothesis
+    unresolved
+    contradicted
+
+Claim evidence identifiers MUST exist. Entries in `contradicts` MUST name other claims in the same chapter and a claim MUST NOT contradict itself.
+
+Claims are the appropriate place for historical interpretations and hypotheses that should not silently become executable parameters. A method may implement a reconstructed claim, but the method's Python or YAML representation is not itself evidence for that claim.
+
 ## 10. Method Files
 
 The `methods` field in `chapter.yaml` MUST list paths to method YAML files.
