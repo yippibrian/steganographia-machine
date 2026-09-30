@@ -130,11 +130,10 @@ def _apply_modifiers(
                 f"mode {mode.name}: {parameter_name} must contain positive integers"
             )
         reset = modifier.get("reset_to_cycle_position", 0)
+        pattern = BlockPattern.from_parameters(mode.parameters, mode.name)
         schedule = {
+            **pattern.schedule_spec,
             "type": "boundary_reset_blocks",
-            "idle_run": mode.parameters.get("idle_run"),
-            "significant_run": mode.parameters.get("significant_run"),
-            "starts_with": mode.parameters.get("starts_with", "idle"),
             "boundary_after_selected": list(boundaries),
             "reset_to_cycle_position": reset,
         }
@@ -210,11 +209,7 @@ def generate_simple_block_space() -> tuple[HistoricalMode, ...]:
     for starts_with in ("idle", "significant"):
         for idle_run in range(1, 6):
             for significant_run in range(1, 7):
-                notation = (
-                    "o" * idle_run + "." * significant_run
-                    if starts_with == "idle"
-                    else "." * significant_run + "o" * idle_run
-                )
+                pattern = BlockPattern(idle_run, significant_run, starts_with)
                 modes.append(
                     HistoricalMode(
                         name=f"generated-{starts_with}-{idle_run}-{significant_run}",
@@ -224,7 +219,7 @@ def generate_simple_block_space() -> tuple[HistoricalMode, ...]:
                             "significant_run": significant_run,
                             "starts_with": starts_with,
                         },
-                        historical_notation=notation,
+                        historical_notation=pattern.notation,
                     )
                 )
     return tuple(modes)
