@@ -167,11 +167,20 @@ def _compile_family(mode: HistoricalMode) -> tuple[Mapping[str, Any], ...]:
 
     if mode.family == "block_word_initials":
         _only(parameters, {"idle_run", "significant_run", "starts_with"}, mode.name)
+        idle_run = _positive_parameter(parameters.get("idle_run"), "idle_run", mode.name)
+        significant_run = _positive_parameter(
+            parameters.get("significant_run"), "significant_run", mode.name
+        )
+        starts_with = parameters.get("starts_with", "idle")
+        if starts_with not in {"idle", "significant"}:
+            raise DefinitionError(
+                f"mode {mode.name}: starts_with must be 'idle' or 'significant'"
+            )
         schedule = {
             "type": "alternating_blocks",
-            "idle_run": parameters.get("idle_run"),
-            "significant_run": parameters.get("significant_run"),
-            "starts_with": parameters.get("starts_with", "idle"),
+            "idle_run": idle_run,
+            "significant_run": significant_run,
+            "starts_with": starts_with,
         }
         return (
             {"unitize": {"unit": "word"}},
@@ -181,6 +190,12 @@ def _compile_family(mode: HistoricalMode) -> tuple[Mapping[str, Any], ...]:
         )
 
     raise DefinitionError(f"mode {mode.name}: unsupported historical family {mode.family!r}")
+
+
+def _positive_parameter(value: Any, label: str, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise DefinitionError(f"mode {name}: {label} must be a positive integer")
+    return value
 
 
 def _validate_historical_notation(mode: HistoricalMode) -> None:
