@@ -1,77 +1,156 @@
 # Historical Mode Architecture
 
-The linear pipeline remains the execution kernel. Historical descriptions compile into it.
+The linear pipeline remains the execution kernel. Historical descriptions compile into it, while evidence and uncertainty remain outside the kernel.
 
 ## Layers
 
-1. **Primitive stages** — `unitize`, `select`, `project`, `concatenate`, `normalize`.
-2. **Schedules** — low-level masks or semantic schedules such as alternating idle/significant blocks.
-3. **Mode families** — reusable historical structures such as `word_initials` and `block_word_initials`.
-4. **Named historical modes** — configurations such as Padiel that bind family parameters.
-5. **Methods** — a corpus method may contain either a direct pipeline or a historical `mode` definition.
-6. **Cases** — bind a method to source and expected artifacts.
+1. **Artifacts** preserve documentary witnesses and derivation metadata.
+2. **Units** retain source coordinates instead of becoming anonymous strings.
+3. **Primitive stages** perform unitization, traversal, selection, projection, concatenation, and normalization.
+4. **Schedules** express low-level masks, semantic idle/significant blocks, or explicit boundary-reset behavior.
+5. **Mode families** express reusable historical structures such as word initials and block word initials.
+6. **Named historical modes** bind family parameters and may preserve the printed o/. notation.
+7. **Methods** contain either a direct pipeline or a historical mode definition.
+8. **Cases** bind a method to artifacts and may supply case-specific execution evidence.
+9. **Claims** record documented, reconstructed, hypothetical, unresolved, or contradicted propositions separately from executable rules.
 
-A historical mode is compiled before execution. This keeps the runtime small while preserving historically meaningful structure in corpus data.
+## Source geometry
 
-## Example
+Unitization preserves a SourceSpan for each unit:
 
-```yaml
-mode:
-  name: Padiel
-  family: block_word_initials
-  parameters:
-    idle_run: 1
-    significant_run: 1
-    starts_with: significant
-  normalization:
-    lowercase: true
-    remove_whitespace: true
-```
+- character offsets,
+- line,
+- column,
+- ending coordinates.
 
-This compiles to the equivalent of:
+Word, character, and line units are currently supported. Selection, traversal, and projection preserve aligned spans. Concatenation intentionally collapses geometry only at the final emitted stream.
 
-```yaml
-pipeline:
-  - unitize: {unit: word}
-  - select:
-      schedule:
-        type: alternating_blocks
-        idle_run: 1
-        significant_run: 1
-        starts_with: significant
-  - project: {part: initial}
-  - concatenate: {}
-  - normalize: {lowercase: true, remove_whitespace: true}
-```
+This is the basis for later alternate-line, half-line, page, glyph, and color operations without forcing them into ad hoc tokenizers.
 
-The semantic form is preferred when the historical evidence describes a mode as a member of a family. A literal `mask` remains available for low-level or source-neutral work.
+## Traversal and projection
 
-## Trace semantics
+Traversal is a first-class stage:
 
-Selection trace entries now distinguish:
+    unitize -> traverse -> select -> project -> concatenate
 
-- `significant`
-- `idle`
+Supported traversal directions are forward and reverse.
 
-and carry schedule state such as family, run lengths, and starting order. This makes the trace an evidentiary explanation rather than only a list of booleans.
+Projection currently supports:
 
-## Boundary-sensitive deviations
+- initial,
+- final,
+- whole.
 
-Selenus describes later modes whose schedule changes when a hidden word ends. These are **not** represented as fixed masks. The schema may record modifiers, but compilation currently rejects them with an explicit error until stateful boundary execution is implemented.
+Syllable projection is intentionally not implemented until a historically defensible segmentation policy is available.
 
-That refusal is intentional. It prevents the corpus from silently approximating a historically stateful rule with a periodic mask.
+## Historical notation
+
+For the simple block family, the source notation is retained alongside semantic parameters.
+
+In Selenus's table:
+
+- o = Idle / non-significant word
+- . = Valid / significant word
+
+Thus:
+
+    Camuel   o.
+    Padiel   .o
+    Aseliel  o..
+    Gediel   oo..
+
+The compiler checks that historical_notation agrees with the semantic parameters. This gives the source notation and executable representation a round-trip consistency check.
+
+## The sixty-cell simple block space
+
+The two orders contain thirty structural cells each.
+
+- five columns vary idle_run from 1 through 5;
+- six rows vary significant_run from 1 through 6;
+- the two orders reverse which class begins the cycle.
+
+Generated cells are deliberately unnamed. Historical names are attached only in the corpus registry when the source supports the identification.
+
+## Stateful boundaries
+
+Later descriptions change behavior when a hidden word ends. These are not silently reduced to periodic masks.
+
+The engine supports an explicit boundary_reset schedule. Boundaries are represented as 1-based counts of selected/significant units and are supplied as case execution parameters.
+
+A boundary-sensitive historical mode may declare:
+
+    modifiers:
+      - type: boundary_reset
+        boundary_parameter: boundary_after_selected
+
+A case may then supply:
+
+    execution:
+      boundary_after_selected: [4, 9, 15]
+
+If the case does not supply required boundaries, execution fails. The compiler never derives them from expected plaintext.
+
+This distinction is intentional:
+
+- the mode records the reusable historical rule;
+- the case records evidence specific to one application;
+- expected output remains verification data, never decoder input.
+
+The current boundary-reset primitive is generic machinery. It does not by itself assert that Barmiel, Asiriel, Malgaras, or another named mode has been completely reconstructed.
+
+## Claims and hypotheses
+
+A chapter may contain structured claims independently of executable methods.
+
+Claim statuses are:
+
+- documented
+- reconstructed
+- hypothesis
+- unresolved
+- contradicted
+
+Claims may cite evidence and explicitly contradict other claims. This is where propositions such as a possible operational meaning for day/night, attendants, signs, colors, or numerical fields belong until evidence justifies promoting them into executable historical rules.
+
+## Artifact provenance
+
+Artifacts may now record:
+
+- witness
+- locator
+- derived_from
+- transformations
+- evidence
+
+Paths are constrained to the chapter root. Parent artifacts and evidence references are validated.
+
+A normalized or reconstructed artifact should therefore be representable as a derivation rather than merely being described in prose.
+
+## Mode catalogue
+
+corpus/mode_registry.yaml records the historical catalogue independently of implementation.
+
+The registry records the expected catalogue size of 67 but is intentionally partial until clean readings of OCR-corrupted names are checked. Catalogue presence, structural classification, executable support, and verified examples are separate states.
 
 ## Migration rule
 
-Existing direct-pipeline methods remain valid. Migrate a method to `mode` only when the historical source supports the higher-level structure. Do not rewrite every method merely for consistency.
+Existing direct-pipeline methods remain valid. Migrate a method to a historical mode only when the source supports the higher-level structure.
 
-## Next execution layer
+Do not create one Python class per named spirit. If many modes differ only in parameters or modifiers, that compression should be visible in the corpus.
 
-The next extension should introduce boundary events and stateful modifiers while keeping hidden-word segmentation provenance explicit. A case must declare whether boundaries are:
+## Remaining deliberate gaps
 
-- independently recoverable from the carrier,
-- supplied by a historical key or reading,
-- supplied only for encoding reconstruction,
-- or unresolved.
+The architecture has places for, but does not yet claim semantics for:
 
-Expected plaintext must never silently become decoder input.
+- syllable segmentation;
+- oblique process;
+- scattering and transposition parameters;
+- half-line selection;
+- color/glyph channels;
+- day/night effects;
+- attendant counts;
+- signs and numerical fields;
+- the twelve modes Selenus reports not understanding;
+- Book III table semantics.
+
+Unknown historical answers should remain explicit holes in the corpus, not implicit guesses in Python.
