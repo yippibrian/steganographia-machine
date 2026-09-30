@@ -4,17 +4,17 @@ notes:
   - This registry is intentionally partial until clean source readings are checked.
   - Catalogue presence is distinct from structural classification and execution support.
 modes:
-  - {id: b1-c03-m01, name: Pamersiel, chapter: 3, mode: 1, family: word_initials, implementation_status: executable}
-  - {id: b1-c04-m01, name: Camuel, chapter: 4, mode: 1, family: block_word_initials, historical_notation: "o.", implementation_status: represented}
-  - {id: b1-c04-m02, name: Padiel, chapter: 4, mode: 2, family: block_word_initials, historical_notation: ".o", implementation_status: verified}
-  - {id: b1-c05-m01, name: Aseliel, chapter: 5, mode: 1, family: block_word_initials, historical_notation: "o..", implementation_status: represented}
-  - {id: b1-c06-m01, name: Gediel, chapter: 6, mode: 1, family: block_word_initials, historical_notation: "oo..", implementation_status: represented}
-  - {id: b1-c06-m02, name: Maseriel, chapter: 6, mode: 2, family: block_word_initials, historical_notation: "ooo...", implementation_status: represented}
-  - {id: b1-c06-m03, name: Dorothiel, chapter: 6, mode: 3, family: block_word_initials, historical_notation: "oooo....", implementation_status: represented}
-  - {id: b1-c06-m04, name: Cabariel, chapter: 6, mode: 4, family: block_word_initials, historical_notation: "ooooo.....", implementation_status: represented}
-  - {id: b1-c07-m01, name: Barmiel, chapter: 7, mode: 1, family: block_word_initials, historical_notation: "o..", implementation_status: requires_stateful_rules}
-  - {id: b1-c07-m02, name: Asiriel, chapter: 7, mode: 2, family: block_word_initials, historical_notation: "oo..", implementation_status: requires_stateful_rules}
-  - {id: b1-c07-m03, name: Malgaras, chapter: 7, mode: 3, family: block_word_initials, historical_notation: "ooo...", implementation_status: requires_stateful_rules}
-  - {id: b1-c07-m04, name: Usiel, chapter: 7, mode: 4, family: block_word_initials, historical_notation: "oooo....", implementation_status: requires_stateful_rules}
-  - {id: b1-c07-m05, name: Raysiel, chapter: 7, mode: 5, family: null, implementation_status: unclassified}
-  - {id: b1-c07-m06, name: Symiel, chapter: 7, mode: 6, family: null, implementation_status: unclassified}
+  - {id: selenus-c03-m01, name: Pamersiel, chapter: 3, mode: 1, family: word_initials, implementation_status: executable}
+  - {id: selenus-c04-m01, name: Camuel, chapter: 4, mode: 1, family: block_word_initials, historical_notation: "o.", implementation_status: represented}
+  - {id: selenus-c04-m02, name: Padiel, chapter: 4, mode: 2, family: block_word_initials, historical_notation: ".o", implementation_status: verified}
+  - {id: selenus-c05-m01, name: Aseliel, chapter: 5, mode: 1, family: block_word_initials, historical_notation: "o..", implementation_status: represented}
+  - {id: selenus-c06-m01, name: Gediel, chapter: 6, mode: 1, family: block_word_initials, historical_notation: "oo..", implementation_status: represented}
+  - {id: selenus-c06-m02, name: Maseriel, chapter: 6, mode: 2, family: block_word_initials, historical_notation: "ooo...", implementation_status: represented}
+  - {id: selenus-c06-m03, name: Dorothiel, chapter: 6, mode: 3, family: block_word_initials, historical_notation: "oooo....", implementation_status: represented}
+  - {id: selenus-c06-m04, name: Cabariel, chapter: 6, mode: 4, family: block_word_initials, historical_notation: "ooooo.....", implementation_status: represented}
+  - {id: selenus-c07-m01, name: Barmiel, chapter: 7, mode: 1, family: block_word_initials, historical_notation: "o..", implementation_status: requires_stateful_rules}
+  - {id: selenus-c07-m02, name: Asiriel, chapter: 7, mode: 2, family: block_word_initials, historical_notation: "oo..", implementation_status: requires_stateful_rules}
+  - {id: selenus-c07-m03, name: Malgaras, chapter: 7, mode: 3, family: block_word_initials, historical_notation: "ooo...", implementation_status: requires_stateful_rules}
+  - {id: selenus-c07-m04, name: Usiel, chapter: 7, mode: 4, family: block_word_initials, historical_notation: "oooo....", implementation_status: requires_stateful_rules}
+  - {id: selenus-c07-m05, name: Raysiel, chapter: 7, mode: 5, family: null, implementation_status: unclassified}
+  - {id: selenus-c07-m06, name: Symiel, chapter: 7, mode: 6, family: null, implementation_status: unclassified}
