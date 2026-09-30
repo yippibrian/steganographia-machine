@@ -148,30 +148,12 @@ class BoundaryResetSchedule:
             self.idle_run, self.significant_run, self.starts_with
         ).mask
 
-    def _state_at(self, index: int) -> tuple[int, bool, int, bool]:
-        if index < 0:
-            raise ValueError("index must be nonnegative")
-        position = 0
-        selected_count = 0
-        boundary_set = set(self.boundary_after_selected)
-        for current in range(index + 1):
-            selected = bool(self.mask[position])
-            boundary_fired = False
-            if selected:
-                selected_count += 1
-            if current == index:
-                boundary_fired = selected and selected_count in boundary_set
-                return position, selected, selected_count, boundary_fired
-            position = (position + 1) % len(self.mask)
-            if selected and selected_count in boundary_set:
-                position = self.reset_to_cycle_position
-        raise AssertionError("unreachable")
 
     def cycle_position(self, index: int) -> int:
-        return self._state_at(index)[0]
+        return self.decision(index).cycle_position
 
     def selected(self, index: int) -> bool:
-        return self._state_at(index)[1]
+        return self.decision(index).selected
 
     def decision(self, index: int) -> ScheduleDecision:
         return self.decisions(index + 1)[index]
