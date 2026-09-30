@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 import yaml
 from .pipeline import Pipeline
-from .schedules import AlternatingBlockSchedule, MaskSchedule
+from .schedules import AlternatingBlockSchedule, BoundaryResetSchedule, MaskSchedule
 from .stages import ConcatenateStage, NormalizeStage, ProjectStage, SelectStage, TraverseStage, UnitizeCharactersStage, UnitizeLinesStage, UnitizeWordsStage
 
 class DefinitionError(ValueError):
@@ -125,6 +125,46 @@ def _schedule_from_dict(spec: dict[str, Any], index: int):
         if starts_with not in {"idle", "significant"}:
             raise DefinitionError(f"pipeline stage {index}: starts_with must be 'idle' or 'significant'")
         return AlternatingBlockSchedule(idle_run, significant_run, starts_with)
+
+    if schedule_type == "boundary_reset_blocks":
+        _reject_unknown(
+            spec,
+            {
+                "type", "idle_run", "significant_run", "starts_with",
+                "boundary_after_selected", "reset_to_cycle_position",
+            },
+            "schedule",
+            index,
+        )
+        idle_run = _positive_int(spec.get("idle_run"), "idle_run", index)
+        significant_run = _positive_int(spec.get("significant_run"), "significant_run", index)
+        starts_with = spec.get("starts_with", "idle")
+        boundaries = spec.get("boundary_after_selected")
+        if (
+            not isinstance(boundaries, list)
+            or not all(
+                isinstance(value, int) and not isinstance(value, bool) and value > 0
+                for value in boundaries
+            )
+        ):
+            raise DefinitionError(
+                f"pipeline stage {index}: boundary_after_selected must be a list of positive integers"
+            )
+        reset = spec.get("reset_to_cycle_position", 0)
+        if isinstance(reset, bool) or not isinstance(reset, int) or reset < 0:
+            raise DefinitionError(
+                f"pipeline stage {index}: reset_to_cycle_position must be a nonnegative integer"
+            )
+        try:
+            return BoundaryResetSchedule(
+                idle_run,
+                significant_run,
+                tuple(boundaries),
+                starts_with,
+                reset,
+            )
+        except ValueError as exc:
+            raise DefinitionError(f"pipeline stage {index}: {exc}") from exc
 
     raise DefinitionError(f"pipeline stage {index}: unsupported schedule type {schedule_type!r}")
 
