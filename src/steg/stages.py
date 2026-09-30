@@ -147,21 +147,21 @@ class SelectStage:
     def execute(self, value: PipelineValue) -> tuple[PipelineValue, TraceEvent]:
         if not isinstance(value, UnitSequence):
             raise TypeError("SelectStage requires UnitSequence input")
-        decisions = []
-        for index, unit in enumerate(value.units):
-            schedule_decision = self.schedule.decision(index)
-            decisions.append(
-                SelectionDecision(
-                    index=index,
-                    unit=unit,
-                    cycle_position=schedule_decision.cycle_position,
-                    selected=schedule_decision.selected,
-                    classification=schedule_decision.classification,
-                    schedule_state=schedule_decision.state,
-                    source_span=value.spans[index] if value.spans else None,
-                )
+        schedule_decisions = self.schedule.decisions(len(value.units))
+        decisions_tuple = tuple(
+            SelectionDecision(
+                index=index,
+                unit=unit,
+                cycle_position=schedule_decision.cycle_position,
+                selected=schedule_decision.selected,
+                classification=schedule_decision.classification,
+                schedule_state=schedule_decision.state,
+                source_span=value.spans[index] if value.spans else None,
             )
-        decisions_tuple = tuple(decisions)
+            for index, (unit, schedule_decision) in enumerate(
+                zip(value.units, schedule_decisions)
+            )
+        )
         selected_indices = tuple(d.index for d in decisions_tuple if d.selected)
         selected = tuple(value.units[index] for index in selected_indices)
         selected_spans = (
