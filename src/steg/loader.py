@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 import yaml
 from .pipeline import Pipeline
-from .schedules import MaskSchedule
+from .schedules import AlternatingBlockSchedule, MaskSchedule
 from .stages import ConcatenateStage, NormalizeStage, ProjectStage, SelectStage, UnitizeCharactersStage, UnitizeWordsStage
 
 class DefinitionError(ValueError):
@@ -82,23 +82,40 @@ def _stage_from_dict(spec: Any, index: int):
     raise DefinitionError(f"pipeline stage {index}: unknown operation {operation!r}")
 
 
-def _schedule_from_dict(spec: dict[str, Any], index: int) -> MaskSchedule:
-    _reject_unknown(spec, {"type", "values", "phase"}, "schedule", index)
-    if spec.get("type") != "mask":
-        raise DefinitionError(f"pipeline stage {index}: only mask schedules are currently supported")
-    values = spec.get("values")
-    if isinstance(values, str):
-        if not values or any(c not in "01" for c in values):
-            raise DefinitionError(f"pipeline stage {index}: mask string must contain only 0 and 1")
-        parsed = tuple(int(c) for c in values)
-    elif isinstance(values, list) and values and all(v in (0, 1) and not isinstance(v, bool) for v in values):
-        parsed = tuple(values)
-    else:
-        raise DefinitionError(f"pipeline stage {index}: mask values must be a non-empty binary string or list")
-    phase = spec.get("phase", 0)
-    if isinstance(phase, bool) or not isinstance(phase, int) or phase < 0:
-        raise DefinitionError(f"pipeline stage {index}: phase must be a nonnegative integer")
-    return MaskSchedule(parsed, phase)
+def _positive_int(value: Any, label: str, index: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise DefinitionError(f"pipeline stage {index}: {label} must be a positive integer")
+    return value
+
+
+def _schedule_from_dict(spec: dict[str, Any], index: int):
+    schedule_type = spec.get("type")
+    if schedule_type == "mask":
+        _reject_unknown(spec, {"type", "values", "phase"}, "schedule", index)
+        values = spec.get("values")
+        if isinstance(values, str):
+            if not values or any(c not in "01" for c in values):
+                raise DefinitionError(f"pipeline stage {index}: mask string must contain only 0 and 1")
+            parsed = tuple(int(c) for c in values)
+        elif isinstance(values, list) and values and all(v in (0, 1) and not isinstance(v, bool) for v in values):
+            parsed = tuple(values)
+        else:
+            raise DefinitionError(f"pipeline stage {index}: mask values must be a non-empty binary string or list")
+        phase = spec.get("phase", 0)
+        if isinstance(phase, bool) or not isinstance(phase, int) or phase < 0:
+            raise DefinitionError(f"pipeline stage {index}: phase must be a nonnegative integer")
+        return MaskSchedule(parsed, phase)
+
+    if schedule_type == "alternating_blocks":
+        _reject_unknown(spec, {"type", "idle_run", "significant_run", "starts_with"}, "schedule", index)
+        idle_run = _positive_int(spec.get("idle_run"), "idle_run", index)
+        significant_run = _positive_int(spec.get("significant_run"), "significant_run", index)
+        starts_with = spec.get("starts_with", "idle")
+        if starts_with not in {"idle", "significant"}:
+            raise DefinitionError(f"pipeline stage {index}: starts_with must be 'idle' or 'significant'")
+        return AlternatingBlockSchedule(idle_run, significant_run, starts_with)
+
+    raise DefinitionError(f"pipeline stage {index}: unsupported schedule type {schedule_type!r}")
 
 
 def _reject_unknown(options: dict[str, Any], allowed: set[str], operation: str, index: int) -> None:
