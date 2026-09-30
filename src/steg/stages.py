@@ -85,10 +85,12 @@ class UnitizeCharactersStage:
     name: str = "unitize_characters"
 
     def execute(self, value: PipelineValue) -> tuple[PipelineValue, TraceEvent]:
+        inherited_spans: tuple[SourceSpan | None, ...] = ()
         if isinstance(value, Text):
             raw = value.value
         elif isinstance(value, EmittedStream):
             raw = value.value
+            inherited_spans = value.spans
         else:
             raise TypeError("UnitizeCharactersStage requires Text or EmittedStream input")
         indexed = tuple(
@@ -97,7 +99,11 @@ class UnitizeCharactersStage:
             if self.include_whitespace or not char.isspace()
         )
         units = tuple(char for _, char in indexed)
-        spans = tuple(_span(raw, index, index + 1) for index, _ in indexed)
+        spans = (
+            tuple(inherited_spans[index] for index, _ in indexed)
+            if inherited_spans
+            else tuple(_span(raw, index, index + 1) for index, _ in indexed)
+        )
         output = UnitSequence(units=units, unit_type="character", spans=spans)
         return output, TraceEvent(
             self.name,
@@ -235,7 +241,15 @@ class ConcatenateStage:
         if not isinstance(value, UnitSequence):
             raise TypeError("ConcatenateStage requires UnitSequence input")
         joined = self.separator.join(value.units)
-        output = EmittedStream(joined)
+        emitted_spans: tuple[SourceSpan | None, ...] = ()
+        if value.spans:
+            span_buffer: list[SourceSpan | None] = []
+            for index, unit in enumerate(value.units):
+                if index:
+                    span_buffer.extend([None] * len(self.separator))
+                span_buffer.extend([value.spans[index]] * len(unit))
+            emitted_spans = tuple(span_buffer)
+        output = EmittedStream(joined, emitted_spans)
         return output, TraceEvent(
             self.name,
             type(value).__name__,
@@ -252,19 +266,34 @@ class NormalizeStage:
     name: str = "normalize"
 
     def execute(self, value: PipelineValue) -> tuple[PipelineValue, TraceEvent]:
+        inherited_spans: tuple[SourceSpan | None, ...] = ()
         if isinstance(value, Text):
             normalized = value.value
         elif isinstance(value, EmittedStream):
             normalized = value.value
+            inherited_spans = value.spans
         else:
             raise TypeError("NormalizeStage requires Text or EmittedStream input")
         if self.lowercase:
             normalized = normalized.lower()
-        for old, new in self.substitutions:
-            normalized = normalized.replace(old, new)
+        if self.substitutions:
+            # Arbitrary substitutions can change string length. Until a
+            # character-level edit map exists, do not fabricate coordinates.
+            for old, new in self.substitutions:
+                normalized = normalized.replace(old, new)
+            inherited_spans = ()
         if self.remove_whitespace:
-            normalized = "".join(normalized.split())
-        output = EmittedStream(normalized)
+            if inherited_spans:
+                kept = tuple(
+                    (char, span)
+                    for char, span in zip(normalized, inherited_spans)
+                    if not char.isspace()
+                )
+                normalized = "".join(char for char, _ in kept)
+                inherited_spans = tuple(span for _, span in kept)
+            else:
+                normalized = "".join(normalized.split())
+        output = EmittedStream(normalized, inherited_spans)
         return output, TraceEvent(
             self.name,
             type(value).__name__,
