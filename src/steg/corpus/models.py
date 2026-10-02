@@ -1,7 +1,9 @@
 from __future__ import annotations
-from dataclasses import dataclass
+
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
+
 
 @dataclass(frozen=True)
 class EvidenceRef:
@@ -11,6 +13,7 @@ class EvidenceRef:
     quotation: str | None = None
     confidence: str = "explicit"
 
+
 @dataclass(frozen=True)
 class ArtifactRef:
     id: str
@@ -18,14 +21,33 @@ class ArtifactRef:
     path: Path
     language: str | None = None
     transcription: str | None = None
+    witness: str | None = None
+    locator: str | None = None
+    derived_from: str | None = None
+    transformations: tuple[str, ...] = ()
+    evidence: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ClaimRef:
+    id: str
+    proposition: str
+    status: str
+    evidence: tuple[str, ...] = ()
+    scope: str | None = None
+    contradicts: tuple[str, ...] = ()
+    notes: tuple[str, ...] = ()
+
 
 @dataclass(frozen=True)
 class MethodDefinition:
     id: str
     title: str
-    pipeline: tuple[Mapping[str, Any], ...]
+    pipeline: tuple[Mapping[str, Any], ...] | None
+    mode: Mapping[str, Any] | None
     evidence: tuple[str, ...]
     notes: tuple[str, ...]
+
 
 @dataclass(frozen=True)
 class CipherCase:
@@ -38,6 +60,8 @@ class CipherCase:
     status: str
     evidence: tuple[str, ...]
     notes: tuple[str, ...]
+    execution: Mapping[str, Any] = field(default_factory=dict)
+
 
 @dataclass(frozen=True)
 class ChapterDefinition:
@@ -53,3 +77,4 @@ class ChapterDefinition:
     evidence: Mapping[str, EvidenceRef]
     methods: Mapping[str, MethodDefinition]
     cases: Mapping[str, CipherCase]
+    claims: Mapping[str, ClaimRef] = field(default_factory=dict)

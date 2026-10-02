@@ -148,15 +148,28 @@ evidence:
   confidence: explicit
 - id: ch01-conjuration-decoding-rule
   source: reconstructed_key_and_selenus
-  relation: method.pamersiel-conjuration-decoder.pipeline
+  relation: method.alternating-words-then-characters.rule
   quotation: Retain alternating words beginning with the second word, concatenate
     them, and retain alternating letters beginning with the second letter.
   confidence: historically_reconstructed
 - id: ch01-word-initial-rule
   source: reconstructed_key_and_selenus
-  relation: method.pamersiel-word-initials.pipeline
+  relation: method.pamersiel-word-initials.rule
   quotation: nym die ersten bugstaben de omni uerbo
   confidence: historically_reported
+claims:
+- id: pamersiel-word-initials
+  proposition: Pamersiel extracts the initial letter of every carrier word.
+  status: reconstructed
+  scope: method.pamersiel-word-initials
+  evidence:
+  - ch01-word-initial-rule
+- id: pamersiel-conjuration-decoding
+  proposition: The documented Pamersiel conjuration reading is reconstructed by alternating words and then alternating characters.
+  status: reconstructed
+  scope: method.alternating-words-then-characters
+  evidence:
+  - ch01-conjuration-decoding-rule
 methods:
 - methods/alternating-words-then-characters.yaml
 - methods/pamersiel-word-initials.yaml

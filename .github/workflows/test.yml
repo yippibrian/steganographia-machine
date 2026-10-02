@@ -1,0 +1,31 @@
+name: Test
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package and test dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Smoke-test installed CLI
+        run: |
+          steg --help
+          python -m steg --help
+      - name: Smoke-test chapter runners
+        run: |
+          python run_chapter.py chapter01
+          python run_chapter.py chapter02

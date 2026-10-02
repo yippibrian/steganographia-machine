@@ -1,11 +1,17 @@
 id: padiel-alternating-word-initials
-title: Take the first letters of alternating words
+title: Padiel — alternating significant and idle word initials
 evidence: [ch02-alternating-initial-rule]
 notes:
-  - The phase remains explicit so each historical example can be tested independently.
-pipeline:
-  - unitize: {unit: word}
-  - select: {schedule: {type: mask, values: "10", phase: 0}}
-  - project: {part: initial}
-  - concatenate: {}
-  - normalize: {lowercase: true, remove_whitespace: true}
+  - Padiel is represented as a named historical configuration, not as an opaque binary mask.
+  - The historical mode compiler lowers this configuration to the existing linear execution kernel.
+mode:
+  name: Padiel
+  family: block_word_initials
+  historical_notation: ".o"
+  parameters:
+    idle_run: 1
+    significant_run: 1
+    starts_with: significant
+  normalization:
+    lowercase: true
+    remove_whitespace: true

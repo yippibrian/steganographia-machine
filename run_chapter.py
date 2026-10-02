@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -19,6 +20,7 @@ def _run_case(
     case_id: str,
     method_id: str | None,
     input_artifact: str | None,
+    execution_parameters: dict | None,
     trace: bool,
 ) -> str:
     compiled = compile_case(
@@ -26,6 +28,7 @@ def _run_case(
         case_id,
         method_id=method_id,
         input_artifact_id=input_artifact,
+        execution_parameters=execution_parameters,
     )
     execution = compiled.execute()
     actual = result_text(execution)
@@ -70,10 +73,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--case")
     parser.add_argument("--method")
     parser.add_argument("--input-artifact")
+    parser.add_argument(
+        "--execution-json",
+        help="replacement case execution parameters as a JSON object",
+    )
     parser.add_argument("--trace", action="store_true")
     args = parser.parse_args(argv)
 
     chapter = load_chapter(ROOT / "corpus" / "book1" / args.chapter)
+    try:
+        execution_parameters = (
+            json.loads(args.execution_json) if args.execution_json else None
+        )
+    except json.JSONDecodeError as exc:
+        parser.error(f"--execution-json is not valid JSON: {exc}")
+    if execution_parameters is not None and not isinstance(execution_parameters, dict):
+        parser.error("--execution-json must decode to an object")
 
     if args.list_methods:
         for method in chapter.methods.values():
@@ -102,6 +117,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.input_artifact and not args.case:
         parser.error("--input-artifact requires --case")
+    if args.execution_json and not args.case:
+        parser.error("--execution-json requires --case")
 
     if args.case:
         statuses = [
@@ -110,6 +127,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.case,
                 args.method,
                 args.input_artifact,
+                execution_parameters,
                 args.trace,
             )
         ]
@@ -122,7 +140,7 @@ def main(argv: list[str] | None = None) -> int:
         if not selected:
             parser.error("no cases match the requested method")
         statuses = [
-            _run_case(chapter, case_id, None, None, args.trace)
+            _run_case(chapter, case_id, None, None, None, args.trace)
             for case_id in selected
         ]
 

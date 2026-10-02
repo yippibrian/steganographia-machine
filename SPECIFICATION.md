@@ -48,8 +48,8 @@ Keep these layers separate:
 # Steganographia Machine Chapter Package and Authoring Specification
 
 **Status:** Working specification  
-**Specification version:** 0.2  
-**Implementation target:** `steganographia-machine-v0.8.1`  
+**Specification version:** 0.3  
+**Implementation target:** `steganographia-machine-v0.9.0`  
 **Compatibility:** Breaking replacement for specification version 0.1  
 **Scope:** Chapter packages, artifacts, evidence, methods, cases, pipelines, validation, and chapter authoring
 
@@ -88,7 +88,7 @@ This separation allows:
 
 The terms **MUST**, **MUST NOT**, **REQUIRED**, **SHOULD**, **SHOULD NOT**, and **MAY** are used as normative requirements.
 
-Requirements explicitly described as implementation behavior reflect version 0.8.1. Recommendations marked as authoring guidance may be stricter than the current loader.
+Requirements explicitly described as implementation behavior reflect version 0.9.0. Recommendations marked as authoring guidance may be stricter than the current loader.
 
 ## 3. Package Layout
 
@@ -115,7 +115,7 @@ The directory names `methods`, `cases`, and `sources` are conventions. The loade
 
 All paths declared in a chapter package MUST be relative to the chapter package root.
 
-Version 0.8.1's `run_chapter.py` resolves chapter arguments beneath:
+Version 0.9.0's `run_chapter.py` resolves chapter arguments beneath:
 
     corpus/book1/
 
@@ -163,7 +163,7 @@ Evidence may support:
 
 ### 4.4 Method
 
-A method is a reusable pipeline. It contains no fixed input or expected output.
+A method is a reusable transformation. It contains no fixed input or expected output and is defined either by a direct pipeline or by a historical mode that compiles to a pipeline.
 
 Examples include:
 
@@ -181,7 +181,8 @@ A case applies one method to one input artifact. It may also identify:
 - a separately formatted reading;
 - evidence;
 - notes;
-- a status.
+- a status;
+- case-specific `execution` parameters required by an explicitly stateful historical rule.
 
 A case is the unit executed by `run_chapter.py`.
 
@@ -199,7 +200,7 @@ The file MUST contain a YAML mapping.
 
 ### 5.1 Required Top-Level Fields
 
-The following fields are REQUIRED by the version 0.8.1 loader:
+The following fields are REQUIRED by the version 0.9.0 loader:
 
     id:
     book:
@@ -293,7 +294,7 @@ For consistency with the current chapters, every chapter SHOULD contain:
       recipient:
       carrier:
 
-Version 0.8.1 does not validate the complete internal schema of these sections. It does, however, require provenance entries for six specific protocol paths.
+Version 0.9.0 does not constrain every field inside these sections. It does require provenance for six protocol paths and verifies that every declared provenance path exists in the protocol mapping.
 
 Additional sections and fields MAY be added.
 
@@ -373,7 +374,7 @@ Example:
 
 The path `protocol.sender.invocation_artifact` MUST have provenance.
 
-The named artifact SHOULD exist in the chapter's artifact declarations. Version 0.8.1 does not directly validate that relationship through the protocol field.
+The named artifact MUST exist in the chapter's artifact declarations when it is not null. Version 0.9.0 validates sender and recipient invocation artifacts, and validates a non-null sign artifact.
 
 ### 6.7 `recipient`
 
@@ -417,7 +418,7 @@ Example:
 
 ### 7.1 Required Provenance Paths
 
-Version 0.8.1 requires all of the following:
+Version 0.9.0 requires all of the following:
 
     protocol.address.direction
     protocol.authority.principal
@@ -430,12 +431,10 @@ Version 0.8.1 requires all of the following:
 
 For each provenance entry:
 
-1. Every referenced evidence identifier MUST exist.
-2. The evidence record's `relation` MUST exactly equal the provenance path.
-
-Version 0.8.1 does not currently verify that every dotted provenance path actually exists in the `protocol` mapping. Authors SHOULD nevertheless ensure that it does.
-
-A provenance list may technically be empty in version 0.8.1, but it SHOULD contain at least one evidence identifier.
+1. The dotted path MUST exist in the `protocol` mapping.
+2. The provenance list MUST contain at least one evidence identifier.
+3. Every referenced evidence identifier MUST exist.
+4. The evidence record's `relation` MUST exactly equal the provenance path.
 
 ## 8. Artifacts
 
@@ -451,6 +450,11 @@ It MAY also contain:
 
     language:
     transcription:
+    witness:
+    locator:
+    derived_from:
+    transformations:
+    evidence:
 
 Example:
 
@@ -477,11 +481,11 @@ Example:
 
 - Artifact identifiers MUST be unique within a chapter.
 - Every declared artifact path MUST exist as a file when the chapter is loaded.
-- Artifact paths SHOULD remain within the chapter package.
+- Artifact paths MUST remain within the chapter package.
 - Artifact files SHOULD be UTF-8 text.
 - Artifact files used for exact verification SHOULD contain only the intended comparison text, with no explanatory headings or notes.
 
-The current loader does not enforce path containment. Authors MUST NOT use paths that escape the chapter package.
+The loader resolves artifact paths and rejects paths that escape the chapter package. It also validates declared parent artifacts and artifact-level evidence references.
 
 ### 8.2 Source Variants and Normalization
 
@@ -551,11 +555,11 @@ Example:
 
       - id: ch03-decoding-rule
         source: documented_interlinear_and_later_key
-        relation: method.alternating-word-initials.pipeline
+        relation: method.alternating-word-initials.rule
         quotation: take the first letters alternately
         confidence: historically_reconstructed
 
-If `confidence` is omitted, version 0.8.1 defaults it to `explicit`.
+If `confidence` is omitted, version 0.9.0 defaults it to `explicit`.
 
 Evidence identifiers MUST be unique within a chapter.
 
@@ -571,6 +575,35 @@ Recommended confidence descriptions include:
     disputed
 
 A method or case may reference any evidence identifier declared in the chapter.
+
+### 9.1 Claims
+
+A chapter MAY contain a top-level `claims` list for propositions that should remain distinct from executable representation.
+
+Each claim contains:
+
+    id:
+    proposition:
+    status:
+
+It MAY also contain:
+
+    evidence:
+    scope:
+    contradicts:
+    notes:
+
+Supported statuses are:
+
+    documented
+    reconstructed
+    hypothesis
+    unresolved
+    contradicted
+
+Claim evidence identifiers MUST exist. Entries in `contradicts` MUST name other claims in the same chapter and a claim MUST NOT contradict itself.
+
+Claims are the appropriate place for historical interpretations and hypotheses that should not silently become executable parameters. A method may implement a reconstructed claim, but the method's Python or YAML representation is not itself evidence for that claim.
 
 ## 10. Method Files
 
@@ -590,7 +623,11 @@ A method file MUST contain:
 
     id:
     title:
+
+It MUST contain exactly one of:
+
     pipeline:
+    mode:
 
 It MAY contain:
 
@@ -615,10 +652,11 @@ Example:
 ### 10.2 Method Validation
 
 - Method identifiers MUST be unique within a chapter.
-- `pipeline` MUST be a list.
-- The pipeline MUST be non-empty when compiled.
+- A method MUST define exactly one of `pipeline` or `mode`.
+- A direct `pipeline` MUST be a list and MUST be non-empty when compiled.
+- A historical `mode` MUST be a mapping accepted by the historical mode compiler.
 - Every evidence identifier named by a method MUST exist.
-- Every stage and option MUST be accepted by the pipeline loader.
+- Every compiled stage and option MUST be accepted by the pipeline loader.
 
 ### 10.3 Method Design Rules
 
@@ -703,7 +741,7 @@ Example unresolved case:
 
 ### 11.2 Allowed Status Values
 
-Version 0.8.1 accepts exactly:
+Version 0.9.0 accepts exactly:
 
     verified
     unverified
@@ -732,7 +770,7 @@ The current CLI still determines displayed `PASS` or `FAIL` from exact output co
 
 Use when a case is retained descriptively but cannot presently be executed reliably because essential data or an operation is missing.
 
-Version 0.8.1 does not prevent execution solely because the status is `blocked`. Authors SHOULD avoid listing a blocked case as ordinarily runnable until the runner gains explicit blocked-case behavior, or ensure tests and documentation explain the limitation.
+Version 0.9.0 does not prevent execution solely because the status is `blocked`. Authors SHOULD avoid listing a blocked case as ordinarily runnable until the runner gains explicit blocked-case behavior, or ensure tests and documentation explain the limitation.
 
 ### 11.3 Case Validation
 
@@ -782,9 +820,10 @@ Example:
 
 Each stage receives the typed output of the preceding stage.
 
-Version 0.8.1 supports five operations:
+Version 0.9.0 supports six operations:
 
     unitize
+    traverse
     select
     project
     concatenate
@@ -813,7 +852,7 @@ The normal data flow is:
     Text
       → unitize
     UnitSequence
-      → select and/or project
+      → traverse, select, and/or project
     UnitSequence
       → concatenate
     EmittedStream
@@ -842,7 +881,7 @@ Output type:
 
     UnitSequence(unit_type="word")
 
-Version 0.8.1 identifies words with a Unicode-aware alphabetic regular expression. It accepts internal apostrophes and hyphens. It excludes standalone digits, punctuation, underscores, whitespace, and symbols such as `&`.
+Version 0.9.0 identifies words with a Unicode-aware alphabetic regular expression. It accepts internal apostrophes and hyphens. It excludes standalone digits, punctuation, underscores, whitespace, and symbols such as `&`.
 
 Consequences:
 
@@ -899,7 +938,7 @@ Output type:
 
     UnitSequence with the same `unit_type`
 
-Version 0.8.1 supports only repeating binary mask schedules.
+Version 0.9.0 supports only repeating binary mask schedules.
 
 ### 15.1 Mask Values
 
@@ -949,7 +988,7 @@ Output type:
 
     UnitSequence
 
-Version 0.8.1 supports:
+Version 0.9.0 supports:
 
     initial
     whole
@@ -1191,7 +1230,7 @@ or:
       --case chapter-ii-first-prayer \
       --method another-method
 
-Version 0.8.1 intentionally reports an overridden case as `UNVERIFIED`, because the configured expected artifact belongs to the original method and input combination.
+Version 0.9.0 intentionally reports an overridden case as `UNVERIFIED`, because the configured expected artifact belongs to the original method and input combination.
 
 ### 20.4 Exact Comparison
 
@@ -1300,7 +1339,7 @@ A trace proves what the configured pipeline did. It does not prove that the hist
 
 ## 23. Validation Rules
 
-A chapter package is invalid when version 0.8.1 detects any of the following.
+A chapter package is invalid when version 0.9.0 detects any of the following.
 
 ### 23.1 Manifest Errors
 
@@ -1634,7 +1673,7 @@ Every method file SHOULD be listed in `chapter.yaml` or removed.
 
 If an identical general method already exists within the chapter, reuse it.
 
-Version 0.8.1 stores methods per chapter, so methods are not yet shared across chapter directories. Within a chapter, duplicate definitions SHOULD still be avoided.
+Version 0.9.0 stores methods per chapter, so methods are not yet shared across chapter directories. Within a chapter, duplicate definitions SHOULD still be avoided.
 
 ### 28.10 Changing old fixtures while adding a new chapter
 
@@ -1929,22 +1968,22 @@ Do not build arbitrary recursive transformation machinery, complicated tokenizat
 
 Add the smallest reusable capability demanded by an actual chapter.
 
-## 32. Known Limitations of Version 0.8.1
+## 32. Known Limitations of Version 0.9.0
 
 The following limitations are important when authoring new chapters:
 
 - `run_chapter.py` selects only chapters under `corpus/book1/`;
 - methods are declared separately inside each chapter and are not yet shared through a global method library;
-- only word and character unitization are supported;
+- word, character, and line unitization are supported, but half-line/page/glyph/color units are not yet modeled;
 - word unitization follows one fixed Unicode-aware regular expression;
-- only repeating binary mask schedules are supported;
-- only `initial` and `whole` projection are supported;
-- reversal, transposition, indexed projection, numerical tables, line units, and computed schedules are not supported;
+- repeating masks, semantic alternating blocks, and explicit boundary-reset schedules are supported;
+- `initial`, `final`, and `whole` projection are supported; syllable projection is deliberately unresolved;
+- forward and reverse traversal are supported; transposition, scattering, indexed projection, and numerical tables are not yet supported;
 - blocked and falsified statuses have no special CLI execution semantics;
 - the loader does not enforce a controlled vocabulary for roles, languages, transcription types, evidence sources, or confidence values;
-- the loader does not enforce path containment within the chapter root;
-- the loader does not confirm that protocol artifact identifiers refer to declared artifacts;
-- the loader does not verify that dotted provenance paths exist in the protocol structure;
+- artifact paths are constrained to the chapter root;
+- sender, recipient, and sign protocol artifact identifiers are checked against declared artifacts;
+- dotted provenance paths are checked against the protocol structure;
 - reading artifacts are display-only and are not compared;
 - exact output comparison supports one expected artifact per case;
 - there is no schema-version field in chapter YAML;
@@ -2011,3 +2050,43 @@ Changes SHOULD identify whether they are:
 - breaking schema changes.
 
 Because version 0.8 intentionally removed the version 0.7 interpretation architecture, specification version 0.2 is a breaking replacement rather than a compatible extension of version 0.1.
+
+
+## 36. Version 0.9 Historical Representation Extensions
+
+Version 0.9 adds a historical representation layer above the linear pipeline.
+
+A method MUST define exactly one of:
+
+- a direct `pipeline`; or
+- a historical `mode` that compiles to a pipeline.
+
+Historical modes MAY preserve:
+
+- a reusable family;
+- semantic parameters;
+- the source's `o` / `.` notation;
+- forward or reverse traversal;
+- modifiers requiring case-specific execution evidence.
+
+For the simple block family, `o` denotes an Idle/non-significant word and `.` a Valid/significant word. The compiler MUST reject a historical notation that contradicts the semantic run lengths and starting order.
+
+Cases MAY contain an `execution` mapping. Such values are inputs required by the historical operation for that particular case; they MUST NOT be inferred from the expected output. Boundary-sensitive execution currently uses this mechanism.
+
+Unit streams MAY retain `SourceSpan` coordinates. Stages that preserve unit identity SHOULD preserve those spans. Final concatenation MAY intentionally collapse geometry.
+
+Artifacts MAY declare `witness`, `locator`, `derived_from`, `transformations`, and artifact-level `evidence`. A declared parent artifact and evidence identifier MUST exist.
+
+Chapters MAY contain structured `claims`. Claims are distinct from executable methods and use one of these statuses:
+
+- `documented`
+- `reconstructed`
+- `hypothesis`
+- `unresolved`
+- `contradicted`
+
+A hypothesis MUST NOT become executable historical semantics merely because an experiment can instantiate it.
+
+The historical catalogue is maintained separately in `corpus/mode_registry.yaml`. Catalogue membership, structural classification, executability, and verification are separate properties.
+
+See `docs/HISTORICAL_MODE_ARCHITECTURE.md` for the architecture and current deliberate gaps.

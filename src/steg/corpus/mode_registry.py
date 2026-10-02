@@ -1,0 +1,106 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+
+@dataclass(frozen=True)
+class ModeRegistryEntry:
+    id: str
+    name: str
+    source_chapter: int
+    source_mode: int
+    family: str | None
+    historical_notation: str | None
+    implementation_status: str
+    notes: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ModeRegistry:
+    expected_catalogue_size: int
+    source: str
+    entries: dict[str, ModeRegistryEntry]
+    notes: tuple[str, ...] = ()
+
+    def named(self, name: str) -> tuple[ModeRegistryEntry, ...]:
+        """Return all catalogue entries with a historical name."""
+        return tuple(entry for entry in self.entries.values() if entry.name == name)
+
+
+ALLOWED_IMPLEMENTATION_STATUSES = {
+    "verified",
+    "executable",
+    "represented",
+    "requires_stateful_rules",
+    "unclassified",
+}
+
+
+def load_mode_registry(path: str | Path) -> ModeRegistry:
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("mode registry must be a mapping")
+    expected = data.get("expected_catalogue_size")
+    if isinstance(expected, bool) or not isinstance(expected, int) or expected < 1:
+        raise ValueError("expected_catalogue_size must be a positive integer")
+    source = data.get("source")
+    if not isinstance(source, str) or not source:
+        raise ValueError("mode registry source must be a non-empty string")
+    raw_notes = data.get("notes", [])
+    if not isinstance(raw_notes, list) or not all(
+        isinstance(note, str) for note in raw_notes
+    ):
+        raise ValueError("mode registry notes must be a list of strings")
+    raw_modes = data.get("modes", [])
+    if not isinstance(raw_modes, list):
+        raise ValueError("mode registry modes must be a list")
+    entries: dict[str, ModeRegistryEntry] = {}
+    for item in raw_modes:
+        if not isinstance(item, dict):
+            raise ValueError("each mode registry entry must be a mapping")
+        entry_notes = item.get("notes", [])
+        if not isinstance(entry_notes, list) or not all(
+            isinstance(note, str) for note in entry_notes
+        ):
+            raise ValueError(
+                f"mode {item.get('id', '<unknown>')}: notes must be a list of strings"
+            )
+        entry = ModeRegistryEntry(
+            id=item["id"],
+            name=item["name"],
+            source_chapter=int(item["source_chapter"]),
+            source_mode=int(item["source_mode"]),
+            family=item.get("family"),
+            historical_notation=item.get("historical_notation"),
+            implementation_status=item.get("implementation_status", "unclassified"),
+            notes=tuple(entry_notes),
+        )
+        if not isinstance(entry.id, str) or not entry.id:
+            raise ValueError("mode registry id must be a non-empty string")
+        if not isinstance(entry.name, str) or not entry.name:
+            raise ValueError(f"mode {entry.id}: name must be a non-empty string")
+        if entry.id in entries:
+            raise ValueError(f"duplicate mode registry id: {entry.id}")
+        if entry.source_chapter < 1 or entry.source_mode < 1:
+            raise ValueError(
+                f"mode {entry.id}: source_chapter and source_mode must be positive integers"
+            )
+        if entry.family is not None and not isinstance(entry.family, str):
+            raise ValueError(f"mode {entry.id}: family must be a string or null")
+        if entry.implementation_status not in ALLOWED_IMPLEMENTATION_STATUSES:
+            raise ValueError(
+                f"mode {entry.name}: unknown implementation status "
+                f"{entry.implementation_status}"
+            )
+        if entry.historical_notation is not None and any(
+            symbol not in {"o", "."} for symbol in entry.historical_notation
+        ):
+            raise ValueError(
+                f"mode {entry.name}: historical_notation must contain only o and ."
+            )
+        entries[entry.id] = entry
+    return ModeRegistry(expected, source, entries, tuple(raw_notes))

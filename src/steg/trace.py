@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .models import ExecutionResult, ProjectionDecision, SelectionDecision
+from .engine.models import ExecutionResult, ProjectionDecision, SelectionDecision
 
 
 def render_trace(result: ExecutionResult) -> str:
@@ -17,12 +17,29 @@ def render_trace(result: ExecutionResult) -> str:
         for decision in decisions:
             if isinstance(decision, SelectionDecision):
                 mark = "yes" if decision.selected else "no"
+                location = ""
+                if decision.source_span is not None:
+                    location = (
+                        f" line={decision.source_span.line}"
+                        f" col={decision.source_span.column}"
+                    )
+                boundary = ""
+                if decision.schedule_state.get("boundary_fired"):
+                    boundary = " boundary=reset"
                 lines.append(
                     f"  {decision.index:>4} cycle={decision.cycle_position:<3} "
-                    f"selected={mark:<3} unit={decision.unit!r}"
+                    f"class={decision.classification:<11} selected={mark:<3} "
+                    f"unit={decision.unit!r}{location}{boundary}"
                 )
             elif isinstance(decision, ProjectionDecision):
+                location = ""
+                if decision.source_span is not None:
+                    location = (
+                        f" line={decision.source_span.line}"
+                        f" col={decision.source_span.column}"
+                    )
                 lines.append(
-                    f"  {decision.index:>4} {decision.unit!r} -> {decision.projected!r}"
+                    f"  {decision.index:>4} {decision.unit!r} -> "
+                    f"{decision.projected!r}{location}"
                 )
     return "\n".join(lines)
